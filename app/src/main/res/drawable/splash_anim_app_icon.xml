@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector
+            android:width="108dp"
+            android:height="108dp"
+            android:viewportWidth="203"
+            android:viewportHeight="230"
+            android:name="vec">
+            <group
+                android:name="group_a"
+                android:scaleX="0.35304347"
+                android:scaleY="0.4"
+                android:pivotX="65.666084"
+                android:pivotY="69"
+                android:translateX="24"
+                android:translateY="28">
+                <path
+                    android:pathData="M0,43V78L27.5,84.5L103.5,83.5L108,53.5L93.5,41L0,43Z">
+                    <aapt:attr name="android:fillColor">
+                        <gradient
+                            android:startX="54"
+                            android:startY="82.5"
+                            android:endX="58"
+                            android:endY="54.5"
+                            android:type="linear">
+                            <item android:offset="0" android:color="#FFFD0330"/>
+                            <item android:offset="1" android:color="#FFA12095"/>
+                        </gradient>
+                    </aapt:attr>
+                </path>
+                <path
+                    android:pathData="M65.07,206L195.5,129.5L163.62,83.29C157.91,90.16 146.49,90.35 140.9,82.15L134.34,72.53C127.88,63.06 113.64,63.96 108.43,74.17L107.75,75.51C102.54,85.72 88.03,85.95 82.49,75.91C78.11,67.96 67.54,66.05 60.66,71.97L53.25,78.33C46.9,83.78 37.43,83.43 31.51,77.51L25.92,71.92C19.63,65.63 9.42,65.68 3.19,72.02L2.15,73.08C1.48,73.76 0.76,74.37 0,74.9V206H65.07Z"
+                    android:fillType="evenOdd">
+                    <aapt:attr name="android:fillColor">
+                        <gradient
+                            android:startX="58.5"
+                            android:startY="229.5"
+                            android:endX="156.82"
+                            android:endY="103.43"
+                            android:type="linear">
+                            <item android:offset="0" android:color="#FFA12095"/>
+                            <item android:offset="1" android:color="#FFFF005C"/>
+                        </gradient>
+                    </aapt:attr>
+                </path>
+                <path
+                    android:pathData="M30.5,226.28C18.49,233.21 3.9,226.76 0,214.58V175.01C0,175.01 0,175 0,175L0,121.71C0,109.16 15.86,103.68 23.6,113.56C28.89,120.31 39.11,120.31 44.4,113.56C52.14,103.68 68,109.16 68,121.71L68,175C68,182.73 74.27,189 82,189H88C95.73,189 102,182.73 102,175V55.66C102,45.25 91.05,38.48 81.74,43.14L40.26,63.88C36.32,65.85 31.68,65.85 27.74,63.88L0,50.01V14.54C3.9,2.36 18.49,-4.09 30.5,2.84L192.5,96.38C206.5,104.46 206.5,124.67 192.5,132.75L30.5,226.28Z"
+                    android:fillType="evenOdd">
+                    <aapt:attr name="android:fillColor">
+                        <gradient
+                            android:startX="222.5"
+                            android:startY="89"
+                            android:endX="137.36"
+                            android:endY="194.79"
+                            android:type="linear">
+                            <item android:offset="0" android:color="#FFA22020"/>
+                            <item android:offset="1" android:color="#FFFF0D38"/>
+                        </gradient>
+                    </aapt:attr>
+                </path>
+            </group>
+        </vector>
+    </aapt:attr>
+    <target
+        android:name="group_a">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="1000"
+                android:propertyName="scaleX"
+                android:valueFrom="0"
+                android:valueTo="0.35304347" />
+        </aapt:attr>
+    </target>
+    <target
+        android:name="group_a">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="1000"
+                android:propertyName="scaleY"
+                android:valueFrom="0"
+                android:valueTo="0.4" />
+        </aapt:attr>
+    </target>
+    <target
+        android:name="vec">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="1000"
+                android:propertyName="alpha"
+                android:valueFrom="0"
+                android:valueTo="1" />
+        </aapt:attr>
+    </target>
+</animated-vector>
