@@ -8,7 +8,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        minSdk = 24
+        minSdk = 29
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -58,6 +58,12 @@ dependencies {
 
 
     implementation(libs.material.kolor)
+implementation(libs.androidx.compose.icons.extended)
+    implementation(libs.color.picker)
+
+    implementation(libs.coil.compose)
+
+    api(libs.androidx.media3.exoplayer)
 
 
     testImplementation(libs.junit)

@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "meloplayer.app"
-        minSdk = 24
+        minSdk = 29
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -57,6 +57,8 @@ dependencies {
 
     implementation(libs.coil.compose)
     implementation(libs.navigation.reimagined)
+    implementation(libs.androidx.compose.icons.extended)
+    implementation(libs.color.picker)
 
 
     testImplementation(libs.junit)

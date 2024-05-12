@@ -1,9 +1,10 @@
-package meloplayer.core.ui.components.sheet
+package meloplayer.core.ui.components.base.sheet
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.layout.Box
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -49,6 +51,7 @@ fun PlayerSheetScaffold(
     Box(
         modifier = modifier
             .fillMaxSize()
+            .navigationBarsPadding()
             .onSizeChanged {
                 layoutHeight = it.height
                 if (layoutHeight > 0 && miniPlayerHeight > 0) {
@@ -56,7 +59,11 @@ fun PlayerSheetScaffold(
                 }
             }
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = with(LocalDensity.current) { (miniPlayerHeight ).toDp() })
+        ) {
             content()
         }
 
@@ -83,6 +90,7 @@ fun PlayerSheetScaffold(
                     state = sheetState.draggableState,
                     orientation = Orientation.Vertical
                 )
+                .background(MaterialTheme.colorScheme.surface)
         ) {
             AnimatedVisibility(
                 visible = sheetState.targetValue == PlayerSheetStateType.FullPlayer || alpha.value < 0.5f,
@@ -118,13 +126,11 @@ fun PlayerSheetScaffold(
                                 sheetState.updateAnchors(layoutHeight, miniPlayerHeight)
                             }
                         }
-                        .navigationBarsPadding()
                         .padding(bottom = with(density) { tabBarHeight.toDp() })
                         .fillMaxWidth()
                         .graphicsLayer {
                             this.alpha = alpha.value
                         }
-
                 ) {
                     miniPlayerContent()
                 }

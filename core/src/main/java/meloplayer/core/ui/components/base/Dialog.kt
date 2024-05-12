@@ -1,4 +1,4 @@
-package meloplayer.core.ui.components
+package meloplayer.core.ui.components.base
 
 import android.view.Gravity
 import androidx.compose.foundation.background

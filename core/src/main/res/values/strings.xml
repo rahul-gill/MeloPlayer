@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Melo Player</string>
+    <string name="ok">OK</string>
+
+    <string name="done">Done</string>
+    <string name="cancel">Cancel</string>
+    <string name="settings">Settings</string>
+</resources>

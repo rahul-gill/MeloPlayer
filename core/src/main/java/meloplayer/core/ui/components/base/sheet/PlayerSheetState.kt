@@ -1,4 +1,4 @@
-package meloplayer.core.ui.components.sheet
+package meloplayer.core.ui.components.base.sheet
 
 import androidx.compose.animation.core.AnimationConstants
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -56,11 +56,15 @@ class PlayerSheetState(
 
     val sheetExpansionRatio: Float
         get() {
-            val miniPlayerPos = draggableState.anchors.positionOf(PlayerSheetStateType.MiniPlayer)
-            val fullPlayerPos = draggableState.anchors.positionOf(PlayerSheetStateType.FullPlayer)
+            val miniPlayerPos = draggableState.anchors.positionOf(PlayerSheetStateType.MiniPlayer).run {
+                if(isNaN()) 0f else this
+            }
+            val fullPlayerPos = draggableState.anchors.positionOf(PlayerSheetStateType.FullPlayer).run {
+                if(isNaN()) 0f else this
+            }
             val currentPos = requireOffset()
 
-            return (currentPos - miniPlayerPos) / (fullPlayerPos - miniPlayerPos)
+            return if(fullPlayerPos - miniPlayerPos == 0f) 0f else (currentPos - miniPlayerPos) / (fullPlayerPos - miniPlayerPos)
         }
 
     suspend fun expandToFullPlayer() {

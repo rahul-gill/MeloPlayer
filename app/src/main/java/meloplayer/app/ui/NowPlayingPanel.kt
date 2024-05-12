@@ -1,5 +1,7 @@
 package meloplayer.app.ui
 
+import android.content.ContentUris
+import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -12,6 +14,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -22,6 +25,7 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import coil.compose.AsyncImage
 import kotlin.math.absoluteValue
 
@@ -44,6 +48,7 @@ fun calculateScale(pagerState: PagerState, page: Int): Float {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NowPlayingPanel(
+    albumId: Long?,
     playItemAtIndex: (Int) -> Unit,
     playingQueue: List<Painter>,
     currentItemIndex: Int,
@@ -72,30 +77,21 @@ fun NowPlayingPanel(
 
             ) {
 
-//            AsyncImage(
-//                targetStateSong
-//                    .createArtworkImageRequest(context.symphony)
-//                    .build(),
-//                null,
-//                contentScale = ContentScale.Crop,
-//                filterQuality = FilterQuality.High,
-//                modifier = Modifier
-//                    .fillMaxSize()
-//                    .clip(RoundedCornerShape(12.dp))
-//            )
-
-
-
-
-            Image(
-                painter = playingQueue[page],
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .scale(scaleFactor.also { println("$it") })
-                    .aspectRatio(1f),
-
+            if(albumId != null){
+                AsyncImage(
+                    model = ContentUris.withAppendedId("content://media/external/audio/albumart".toUri(),
+                        albumId
+                    ),
+                    null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .scale(scaleFactor)
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(12.dp))
                 )
+            } else {
+                Text(text = "null")
+            }
         }
     }
 }

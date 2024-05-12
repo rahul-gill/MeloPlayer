@@ -1,4 +1,4 @@
-package meloplayer.core.ui.components
+package meloplayer.core.ui.components.base
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -92,7 +92,7 @@ fun TabItem(
             .minimumInteractiveComponentSize()
             .padding(TabsDefaults.itemPadding),
         verticalArrangement = Arrangement.spacedBy(
-                TabsDefaults.itemIndicatorSpacing, alignment = Alignment.CenterVertically
+            TabsDefaults.itemIndicatorSpacing, alignment = Alignment.CenterVertically
             ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
