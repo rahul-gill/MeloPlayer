@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.jetbrainsKotlinAndroid)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -8,7 +9,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        minSdk = 29
+        minSdk = 24
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -34,10 +35,13 @@ android {
     buildFeatures {
         compose = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
-    }
 }
+
+
+composeCompiler {
+    enableStrongSkippingMode = true
+}
+
 
 dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
@@ -45,6 +49,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.window.size)
+    implementation(libs.androidx.compose.adaptive)
     implementation(libs.androidx.compose.preview)
     debugImplementation(libs.androidx.compose.tooling)
     implementation(libs.androidx.datastore.preferences)
@@ -60,6 +66,8 @@ dependencies {
     implementation(libs.material.kolor)
 implementation(libs.androidx.compose.icons.extended)
     implementation(libs.color.picker)
+
+    implementation(libs.androidx.media3.session)
 
     implementation(libs.coil.compose)
 

@@ -1,6 +1,7 @@
 package meloplayer.core.ui.components.base
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -85,9 +86,15 @@ fun TabItem(
         modifier = modifier
             .clip(TabsDefaults.itemShape)
             .clickable(
-                interactionSource = interactionSource, indication = rememberRipple(
-                    color = colors.itemRipple
-                ), role = Role.Tab, onClick = onClick, enabled = enabled
+                interactionSource = interactionSource,
+                indication = LocalIndication.current
+                //TODO
+
+//                        rememberRipple(
+//                    color = colors.itemRipple
+//                )
+                ,
+                role = Role.Tab, onClick = onClick, enabled = enabled
             )
             .minimumInteractiveComponentSize()
             .padding(TabsDefaults.itemPadding),
@@ -149,9 +156,13 @@ fun CustomTabItem(
             .height(TabsDefaults.customButtonHeight)
             .clip(TabsDefaults.itemShape)
             .clickable(
-                interactionSource = interactionSource, indication = rememberRipple(
-                    color = colors.itemRipple
-                ),
+                interactionSource = interactionSource,
+                indication = LocalIndication.current
+//                TODO
+//                rememberRipple(
+//                    color = colors.itemRipple
+//                )
+                ,
                 role = Role.Tab,
                 onClick = onClick,
                 enabled = enabled

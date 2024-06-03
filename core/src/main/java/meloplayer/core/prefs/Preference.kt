@@ -7,6 +7,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -109,6 +110,26 @@ class BooleanPreference(
     }
 
     override val observableValue: Flow<Boolean>
+        get() = applicationContextGlobal.dataStore.data.map { pref ->
+            pref[backingKey] ?: defaultValue
+        }
+}
+
+class FloatPreference(
+    override val key: String,
+    override val defaultValue: Float
+) : Preference<Float> {
+
+    private val backingKey = floatPreferencesKey(key)
+    override fun setValue(value: Float) {
+        runBlocking {
+            applicationContextGlobal.dataStore.edit { prefs ->
+                prefs[backingKey] = value
+            }
+        }
+    }
+
+    override val observableValue: Flow<Float>
         get() = applicationContextGlobal.dataStore.data.map { pref ->
             pref[backingKey] ?: defaultValue
         }

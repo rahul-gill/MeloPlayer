@@ -1,7 +1,10 @@
 package meloplayer.core.ui.components.base.sheet
 
 import androidx.compose.animation.core.AnimationConstants
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.AnchoredDraggableState
@@ -42,7 +45,7 @@ class PlayerSheetState(
 
     val draggableState = AnchoredDraggableState(
         initialValue = initialValue,
-        animationSpec = tween(easing = FastOutSlowInEasing, durationMillis = (AnimationConstants.DefaultDurationMillis * 1.5).toInt()),
+        animationSpec = tween(easing = LinearEasing, durationMillis = AnimationConstants.DefaultDurationMillis),
         positionalThreshold = { distance: Float -> distance * 0.5f },
         velocityThreshold = { with(density) { 125.dp.toPx() } },
         confirmValueChange = { true }
@@ -68,11 +71,11 @@ class PlayerSheetState(
         }
 
     suspend fun expandToFullPlayer() {
-        draggableState.animateTo(PlayerSheetStateType.FullPlayer, draggableState.lastVelocity)
+        draggableState.animateTo(PlayerSheetStateType.FullPlayer)//TODO, draggableState.lastVelocity)
     }
 
     suspend fun shrinkToMiniPlayer() {
-        draggableState.animateTo(PlayerSheetStateType.MiniPlayer, draggableState.lastVelocity)
+        draggableState.animateTo(PlayerSheetStateType.MiniPlayer)//TODO, draggableState.lastVelocity)
     }
 
     fun requireOffset() = if (draggableState.offset.isNaN()) 0f else draggableState.offset
