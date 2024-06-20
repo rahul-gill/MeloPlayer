@@ -65,8 +65,12 @@ dependencies {
     implementation(libs.androidx.compose.icons.extended)
     implementation(libs.color.picker)
 
+    implementation(libs.sticky.head.grid)
 
+
+    implementation(libs.androidx.media3.session)
     testImplementation(libs.junit)
+    testImplementation(libs.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

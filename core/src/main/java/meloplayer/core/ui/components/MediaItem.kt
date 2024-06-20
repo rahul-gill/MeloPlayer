@@ -47,7 +47,7 @@ fun MediaItemGridCard(
     imageModel: Any,
     title: String,
     subtitle: String,
-    options: @Composable (Boolean, () -> Unit) -> Unit,
+    options: @Composable (Boolean, () -> Unit) -> Unit = {_, _ ->},
     onPlay: () -> Unit,
     onClick: () -> Unit,
 ) {
@@ -136,7 +136,7 @@ fun MediaItemListCard(
     leading: @Composable () -> Unit = {},
     onShowOptionsMenu: (() -> Unit)? = null,
     thumbnailLabel: (@Composable () -> Unit)? = null,
-    onClick: () -> Unit,
+    onClick: () -> Unit ,
     showHeartIcon: Boolean = false,
 ) {
     Card(

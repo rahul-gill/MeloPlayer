@@ -1,4 +1,7 @@
-package meloplayer.core.store
+package meloplayer.core.store.model
+
+import java.time.LocalDate
+
 
 data class Album(
     val id: Long,
@@ -8,16 +11,11 @@ data class Album(
     val title: String
         get() = songs.first().albumName
 
-    val artistId: Long
-        get() = songs.first().artistId
-
-    val artistName: String
-        get() = songs.first().artistName
 
     val year: Int
         get() = songs.first().year
 
-    val dateModified: Long
+    val dateModified: LocalDate
         get() = songs.first().dateModified
 
     val songCount: Int

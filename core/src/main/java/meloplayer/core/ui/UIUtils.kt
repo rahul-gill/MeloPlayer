@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -66,8 +67,17 @@ private val Int.ForIncoming: Int
 
 private const val LuminanceThreshold = 0.5f
 
-fun Modifier.onCondition(condition: Boolean, block: Modifier.() -> Modifier): Modifier {
-    return if (condition) this.block() else this
+
+@Composable
+fun Modifier.conditional(
+    condition: Boolean,
+    modifier: @Composable Modifier.() -> Modifier
+): Modifier {
+    return if (condition) {
+        then(modifier(Modifier))
+    } else {
+        this
+    }
 }
 
 

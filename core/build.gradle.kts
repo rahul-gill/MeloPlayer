@@ -47,6 +47,8 @@ dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     implementation(libs.androidx.core.ktx)
+
+    implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.window.size)
@@ -70,6 +72,9 @@ implementation(libs.androidx.compose.icons.extended)
     implementation(libs.androidx.media3.session)
 
     implementation(libs.coil.compose)
+
+
+    implementation(libs.molecule)
 
     api(libs.androidx.media3.exoplayer)
 

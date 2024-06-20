@@ -115,7 +115,7 @@ private fun Modifier.pagerTransitionFade(
     page: Int
 ): Modifier {
     return graphicsLayer {
-        val pageOffset = pagerState.getOffsetFractionForPage(page)
+        val pageOffset = pagerState.getOffsetDistanceInPages(page)
         translationX = pageOffset * size.width
         alpha = 1 - pageOffset.absoluteValue
     }
@@ -137,7 +137,7 @@ private fun Modifier.pagerTransitionCubeInRotation(
     page: Int
 ) = graphicsLayer {
     cameraDistance = 32f
-    val pageOffset = pagerState.getOffsetFractionForPage(page)
+    val pageOffset = pagerState.getOffsetDistanceInPages(page)
 
     when {
         (pageOffset < -1f) -> {
@@ -174,7 +174,7 @@ private fun Modifier.pagerTransitionHinge(
 ) = graphicsLayer {
     // Calculate the absolute offset for the current page from the
     // scroll position.
-    val pageOffset = pagerState.getOffsetFractionForPage(page)
+    val pageOffset = pagerState.getOffsetDistanceInPages(page)
     translationX = pageOffset * size.width
     transformOrigin = TransformOrigin(0f, 0f)
 
@@ -342,7 +342,7 @@ private fun Modifier.pagerTransitionVerticalFlip(
     page: Int
 ) = graphicsLayer {
 
-    val position = -pagerState.getOffsetFractionForPage(page)
+    val position = -pagerState.getOffsetDistanceInPages(page)
     translationX = -position * size.width
     cameraDistance = 2000f
     println("Page: $page position:$position")
@@ -382,7 +382,7 @@ private fun Modifier.pagerTransitionHorizontalFlip(
     page: Int
 ) = graphicsLayer {
 
-    val position = -pagerState.getOffsetFractionForPage(page)
+    val position = -pagerState.getOffsetDistanceInPages(page)
     translationX = -position * size.width
     cameraDistance = 2000f
     println("Page: $page position:$position")

@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import meloplayer.core.prefs.BooleanPreference
 import meloplayer.core.prefs.FloatPreference
@@ -40,7 +41,8 @@ class PlaybackManger(
 
     }
 
-    val queueManager = PlaybackQueueManager.getImpl(loopMode, shuffleEnabled, onQueueEvent)
+    val queueManager =
+        PlaybackQueueManager.getImpl(coroutineScope, loopMode, shuffleEnabled, onQueueEvent)
     val player = MeloPlayer.getImpl(context, playbackSpeedPref, playbackPitchPref, coroutineScope)
 
 
@@ -58,7 +60,7 @@ class PlaybackManger(
                 initialSongId ?: initialQueue.first()
             )
         )
-        if(initialSongId != null){
+        if (initialSongId != null) {
             queueManager.setCurrentSongIndex(
                 queueManager.currentQueue.value.indexOf(initialSongId)
             )
@@ -87,7 +89,25 @@ class PlaybackManger(
                     queue[nextSong]
                 )
             )
-            queueManager.toggleLoopMode()
+            queueManager.setCurrentSongIndex(nextSong)
+        }
+    }
+
+    fun skipToPrevious() {
+        if ((player.playbackPosition.value?.currentDurationMillis ?: 0) > 4000) {
+            player.seekTo(0)
+        } else {
+            val queue = queueManager.currentQueue.value
+            val prevSong = queueManager.currentSongIndex.value?.minus(1)
+            if (prevSong != null && queue.getOrNull(prevSong) != null) {
+                player.setNextUri(
+                    ContentUris.withAppendedId(
+                        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                        queue[prevSong]
+                    )
+                )
+                queueManager.setCurrentSongIndex(prevSong)
+            }
         }
     }
 

@@ -2,53 +2,94 @@ package meloplayer.core.store
 
 import android.content.Context
 import android.database.Cursor
+import android.os.Build
 import android.provider.BaseColumns
 import android.provider.MediaStore
 import androidx.core.database.getStringOrNull
+import meloplayer.core.prefs.Preference
+import meloplayer.core.startup.applicationContextGlobal
+import meloplayer.core.store.model.MediaStoreSong
+import meloplayer.core.store.model.SongFilter
+import meloplayer.core.store.model.SongSortOrder
 import java.lang.RuntimeException
+import java.text.Collator
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 
-/**
- * This interface just queries the
- */
-fun interface MediaStoreSongsFetcher {
+interface MediaStoreSongsFetcher {
 
     /**
      * Can result in either [ContentResolverQueryNullException] or [SecurityException]
      */
     fun getSongs(
         filters: List<SongFilter>,
-        sortOrder: SongSortOrder?
+        sortOrder: SongSortOrder?,
+        ignoreBlackLists: Boolean = false
     ): Result<List<MediaStoreSong>>
+
 
     class ContentResolverQueryNullException : RuntimeException()
 
 
     companion object {
-        fun getImpl(context: Context): MediaStoreSongsFetcher {
-            return MediaStoreSongsFetcherImpl(context)
+
+        val instance: MediaStoreSongsFetcher by lazy {
+            MediaStoreSongsFetcherImpl(
+                applicationContextGlobal,
+                multipleValueSeparatorGetter = { listOf(",", "|") })
+        }
+
+        fun getImpl(
+            context: Context,
+            multipleValueSeparatorGetter: () -> List<String>
+        ): MediaStoreSongsFetcher {
+            return MediaStoreSongsFetcherImpl(context, multipleValueSeparatorGetter)
         }
     }
 }
 
 
 private class MediaStoreSongsFetcherImpl(
-    private val context: Context
+    private val context: Context,
+    private val multipleValueSeparatorGetter: () -> List<String>
 ) : MediaStoreSongsFetcher {
     override fun getSongs(
         filters: List<SongFilter>,
-        sortOrder: SongSortOrder?
+        sortOrder: SongSortOrder?,
+        ignoreBlackLists: Boolean
     ): Result<List<MediaStoreSong>> {
         //${MediaStore.Audio.Media.IS_MUSIC} != 0
-        var selection = ""
+        var selection = "  "
         val selectionValues = mutableListOf<String>()
-        filters.forEach { filter ->
-            selection = "$selection AND ${filter.cursorSelectionCondition}"
+        val defaultFilters = if (ignoreBlackLists) listOf()
+        else StoreDefaults.BlacklistDirectories.map {
+            SongFilter.DirectoryPathRecursive(
+                it.absolutePath,
+                isExclude = true
+            )
+        }
+        (defaultFilters + filters).forEach { filter ->
+
+            selection = if (selection.isBlank())
+                " ${filter.cursorSelectionCondition} "
+            else "$selection AND ${filter.cursorSelectionCondition}"
             selectionValues.add(filter.cursorSelectionConditionParamValue)
         }
 
-        val uri = MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+        val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+        } else {
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        }
 
+
+        println("uri: $uri")
+        println("BaseProjection: ${BaseProjection.toList()}")
+        println("selection: $selection")
+        println("selectionValues: $selectionValues")
+        println("sortOrder: ${sortOrder?.getOrderByCondition}")
         try {
             val cursor = context.contentResolver.query(
                 uri,
@@ -57,10 +98,13 @@ private class MediaStoreSongsFetcherImpl(
                 selectionValues.toTypedArray().ifEmpty { null },
                 sortOrder?.getOrderByCondition
             ) ?: return Result.failure(MediaStoreSongsFetcher.ContentResolverQueryNullException())
+
             val songs = generateSequence { if (cursor.moveToNext()) cursor else null }
-                .map(::songCursorToSong)
+                .map { songCursorToSong(it, multipleValueSeparatorGetter()) }
                 .filterNotNull()
                 .toList()
+
+            println("$songs")
             cursor.close()
             return Result.success(songs)
         } catch (ex: SecurityException) {
@@ -68,7 +112,9 @@ private class MediaStoreSongsFetcherImpl(
         }
     }
 
-    fun songCursorToSong(cursor: Cursor): MediaStoreSong? {
+    fun songCursorToSong(
+        cursor: Cursor, multipleValueSeparator: List<String>
+    ): MediaStoreSong? {
         try {
             val id =
                 cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns._ID))
@@ -102,11 +148,11 @@ private class MediaStoreSongsFetcherImpl(
                 year,
                 duration,
                 data,
-                dateModified,
+                LocalDate.ofInstant(Instant.ofEpochSecond(dateModified), ZoneId.systemDefault()),
                 albumId,
                 albumName ?: "",
                 artistId,
-                artistName ?: "",
+                artistName?.split(*multipleValueSeparator.toTypedArray()) ?: listOf(),
                 composer ?: "",
                 albumArtist ?: ""
             )
@@ -137,6 +183,61 @@ private class MediaStoreSongsFetcherImpl(
 
 }
 
+private fun sortBySortOrderType(list: List<MediaStoreSong>, sortOrder: SongSortOrder) {
+    val collator = Collator.getInstance()
+    when (sortOrder) {
+        is SongSortOrder.Album -> list.sortedWith { a, b ->
+            collator.compare(
+                if (sortOrder.isAscending) a.albumName else b.albumName,
+                if (sortOrder.isAscending) b.albumName else a.albumName
+            )
+        }
+
+        is SongSortOrder.AlbumArtist -> list.sortedWith { a, b ->
+            collator.compare(
+                if (sortOrder.isAscending) a.title else b.title,
+                if (sortOrder.isAscending) b.title else a.title
+            )
+        }
+
+        is SongSortOrder.Composer -> list.sortedWith { a, b ->
+            collator.compare(
+                if (sortOrder.isAscending) a.title else b.title,
+                if (sortOrder.isAscending) b.title else a.title
+            )
+        }
+
+
+        is SongSortOrder.DateModified -> {
+            if (sortOrder.isAscending) list.sortedBy { it.dateModified }
+            else list.sortedByDescending { it.dateModified }
+        }
+
+        is SongSortOrder.Duration -> {
+            if (sortOrder.isAscending) list.sortedBy { it.duration }
+            else list.sortedByDescending { it.duration }
+        }
+
+        is SongSortOrder.Name -> list.sortedWith { a, b ->
+            collator.compare(
+                if (sortOrder.isAscending) a.title else b.title,
+                if (sortOrder.isAscending) b.title else a.title
+            )
+        }
+
+        is SongSortOrder.SongArtist -> list.sortedWith { a, b ->
+            collator.compare(
+                if (sortOrder.isAscending) a.title else b.title,
+                if (sortOrder.isAscending) b.title else a.title
+            )
+        }
+
+        is SongSortOrder.Year -> {
+            if (sortOrder.isAscending) list.sortedBy { it.year }
+            else list.sortedByDescending { it.year }
+        }
+    }
+}
 
 private val SongSortOrder.getOrderByCondition: String
     get() {
@@ -151,7 +252,6 @@ private val SongSortOrder.getOrderByCondition: String
             is SongSortOrder.Composer -> "${MediaStore.Audio.Media.COMPOSER} $ascDescCondition"
             is SongSortOrder.Name -> "${MediaStore.Audio.Media.TITLE} $ascDescCondition"
             is SongSortOrder.SongArtist -> "${MediaStore.Audio.Artists.DEFAULT_SORT_ORDER} $ascDescCondition"
-            is SongSortOrder.DateAdded -> "${MediaStore.Audio.Media.DATE_ADDED} $ascDescCondition"
             is SongSortOrder.DateModified -> "${MediaStore.Audio.Media.DATE_MODIFIED} $ascDescCondition"
             is SongSortOrder.Duration -> "${MediaStore.Audio.Media.DURATION} $ascDescCondition"
             is SongSortOrder.Year -> "${MediaStore.Audio.Media.YEAR} $ascDescCondition"
@@ -166,12 +266,12 @@ private val SongSortOrder.getOrderByCondition: String
 private val SongFilter.cursorSelectionConditionParamValue: String
     get() = when (this) {
         is SongFilter.DurationLessThan -> "$durationMillis"
-        is SongFilter.DirectoryPath -> "$folderPath%"
+        is SongFilter.DirectoryPathRecursive -> "$folderPath%"
         is SongFilter.DirectoryPathExact -> folderPath
         is SongFilter.GenreExact -> genreName
         is SongFilter.SearchByTitle -> "%$titleQuery%"
-        is SongFilter.GetOneById -> id
-        is SongFilter.AlbumIdExact -> albumId
+        is SongFilter.GetOneById -> "$id"
+        is SongFilter.AlbumIdExact -> "$albumId"
         is SongFilter.AlbumName -> "%$album%"
         is SongFilter.Artist -> "%$artist%"
         is SongFilter.ArtistsIdExact -> artistId
@@ -181,9 +281,9 @@ private val SongFilter.cursorSelectionConditionParamValue: String
 private val SongFilter.cursorSelectionCondition: String
     get() {
         val likeClause = if (this.isExclude) {
-            " LIKE "
-        } else {
             " NOT LIKE "
+        } else {
+            " LIKE "
         }
         val lessThanClause = if (this.isExclude) {
             " >= "
@@ -192,7 +292,7 @@ private val SongFilter.cursorSelectionCondition: String
         }
 
         return when (this) {
-            is SongFilter.DirectoryPath ->
+            is SongFilter.DirectoryPathRecursive ->
                 "${MediaStore.Audio.Media.DATA} $likeClause ?"
 
             is SongFilter.DirectoryPathExact ->

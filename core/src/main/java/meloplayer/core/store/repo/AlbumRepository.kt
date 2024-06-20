@@ -1,21 +1,81 @@
 package meloplayer.core.store.repo
 
-import meloplayer.core.store.Album
-import meloplayer.core.store.AlbumSortOrder
 import meloplayer.core.store.MediaStoreSongsFetcher
-import meloplayer.core.store.SongSortOrder
+import meloplayer.core.store.model.Album
+import meloplayer.core.store.model.AlbumSortOrder
+import meloplayer.core.store.model.MediaStoreSong
+import meloplayer.core.store.model.SongFilter
 import java.text.Collator
 
-class AlbumRepository(
-    private val fetcher: MediaStoreSongsFetcher
-) {
-    fun allAlbums(
+
+interface AlbumRepository {
+    fun albums(
         sortOrder: AlbumSortOrder? = null
+    ): Result<List<Album>>
+
+    fun albums(
+        query: String,
+        sortOrder: AlbumSortOrder? = null
+    ): Result<List<Album>>
+
+    fun album(albumId: Long): Result<Album>
+
+    companion object {
+        val instance: AlbumRepository by lazy {
+            AlbumRepositoryImpl(MediaStoreSongsFetcher.instance)
+        }
+
+        fun getImpl(
+            fetcher: MediaStoreSongsFetcher
+        ): AlbumRepository = AlbumRepositoryImpl(fetcher)
+    }
+
+    class AlbumNotFoundException : RuntimeException()
+}
+
+private class AlbumRepositoryImpl(
+    private val fetcher: MediaStoreSongsFetcher
+) : AlbumRepository {
+    override fun albums(
+        sortOrder: AlbumSortOrder?
     ): Result<List<Album>> {
         val songsResult = fetcher.getSongs(
             filters = listOf(),
             sortOrder = null
         )
+        return songResultToAlbums(songsResult, sortOrder)
+    }
+
+    override fun albums(query: String, sortOrder: AlbumSortOrder?): Result<List<Album>> {
+        val songsResult = fetcher.getSongs(
+            filters = listOf(SongFilter.AlbumName(query)),
+            sortOrder = null
+        )
+        return songResultToAlbums(songsResult, sortOrder)
+    }
+
+    override fun album(albumId: Long): Result<Album> {
+        val songsResult = fetcher.getSongs(
+            filters = listOf(SongFilter.AlbumIdExact(albumId)),
+            sortOrder = null
+        )
+        val albumResult = songResultToAlbums(songsResult).map { it.firstOrNull() }
+        return when {
+            albumResult.isFailure ->
+                Result.failure(albumResult.exceptionOrNull()!!)
+
+            albumResult.getOrNull() == null ->
+                Result.failure(AlbumRepository.AlbumNotFoundException())
+
+            else -> albumResult.map { it!! }
+        }
+    }
+
+
+    private fun songResultToAlbums(
+        songsResult: Result<List<MediaStoreSong>>,
+        sortOrder: AlbumSortOrder? = null
+    ): Result<List<Album>> {
         val exp = songsResult.exceptionOrNull()
         if (exp != null) {
             return Result.failure(exp)
@@ -47,10 +107,6 @@ class AlbumRepository(
                 null -> albums
             }
         )
-    }
-
-    fun albumById(id: String){
-
     }
 
 }

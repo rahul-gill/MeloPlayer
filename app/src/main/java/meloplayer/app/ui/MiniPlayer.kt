@@ -2,21 +2,20 @@ package meloplayer.app.ui
 
 import android.content.ContentUris
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -40,7 +39,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import coil.compose.AsyncImage
-import meloplayer.core.store.MediaStoreSong
+import meloplayer.core.store.model.MediaStoreSong
+import meloplayer.core.ui.conditional
 
 @Composable
 fun MiniPlayer(
@@ -49,36 +49,43 @@ fun MiniPlayer(
     playbackProgress: Float,
     showTrackControls: Boolean = true,
     showSeekControls: Boolean = false,
-    onSkipToPrevious: () -> Unit = {},
-    onSkipToNext: () -> Unit = {},
+    onSkipToPrevious: () -> Unit,
+    onSkipToNext: () -> Unit,
     seekBack: () -> Unit = {},
     seekForward: () -> Unit = {},
     isPlaying: Boolean = false,
     onClick: () -> Unit,
-    onSwitchPlayPause: () -> Unit = {}
+    onSwitchPlayPause: () -> Unit,
+    insetPaddings: WindowInsets? = WindowInsets.navigationBars
 ) {
-    Column(modifier = modifier) {
-        Box(
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .then(modifier),
+        onClick = onClick,
+        shape = RectangleShape,
+    ) {
+        Column(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
-                .height(2.dp)
-                .fillMaxWidth()
+                .conditional(insetPaddings != null) {
+                    windowInsetsPadding(insetPaddings!!)
+                }
         ) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .background(MaterialTheme.colorScheme.primary)
-                    .fillMaxHeight()
-                    .fillMaxWidth(playbackProgress)
-            )
-        }
-        ElevatedCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight(),
-            onClick = onClick,
-            shape = RectangleShape,
-        ) {
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+                    .height(2.dp)
+                    .fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .fillMaxHeight()
+                        .fillMaxWidth(playbackProgress)
+                )
+            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(0.dp, 8.dp),
@@ -114,9 +121,9 @@ fun MiniPlayer(
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.bodyMedium,
                         )
-                        if (song.artistName.isNotBlank()) {
+                        if (song.artistNames.isNotEmpty()) {
                             Text(
-                                song.artistName,
+                                song.artistNames.joinToString(", "),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.bodySmall,
@@ -168,4 +175,5 @@ fun MiniPlayer(
             }
         }
     }
+
 }

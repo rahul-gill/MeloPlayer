@@ -17,4 +17,11 @@
     <string name="songs">Songs</string>
     <string name="shuffle_songs_and_play">Shuffle songs and play</string>
 
+
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="stop">Stop</string>
+    <string name="sort_songs_by">Sort songs by</string>
 </resources>

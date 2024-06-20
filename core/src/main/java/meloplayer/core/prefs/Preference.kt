@@ -35,7 +35,6 @@ interface Preference<T> {
     @Composable
     fun asState() = observableValue.collectAsStateWithLifecycle(initialValue = value)
 
-
 }
 
 /**
