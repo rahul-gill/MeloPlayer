@@ -1,6 +1,9 @@
 package meloplayer.core.ui.components
 
+import androidx.compose.animation.core.animateDp
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,11 +16,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -26,6 +32,7 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,20 +54,29 @@ fun MediaItemGridCard(
     imageModel: Any,
     title: String,
     subtitle: String,
-    options: @Composable (Boolean, () -> Unit) -> Unit = {_, _ ->},
-    onPlay: () -> Unit,
-    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    options: @Composable (Boolean, () -> Unit) -> Unit = { _, _ -> },
+    onClick: () -> Unit = {},
+    isSelected: Boolean? = null
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .wrapContentHeight(),
+            .wrapContentHeight()
+            .then(modifier),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         onClick = onClick
     ) {
-        Box(modifier = Modifier.padding(12.dp)) {
+        Box {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box {
+                    val transition = updateTransition(isSelected, label = "selected")
+                    val padding by transition.animateDp(label = "padding") { selected ->
+                        if (selected == true) 10.dp else 0.dp
+                    }
+                    val roundedCornerShape by transition.animateDp(label = "corner") { selected ->
+                        if (selected == true) 16.dp else 5.dp
+                    }
                     AsyncImage(
                         imageModel,
                         null,
@@ -68,40 +84,70 @@ fun MediaItemGridCard(
                         modifier = Modifier
                             .aspectRatio(1f)
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp)),
+                            .padding(padding)
+                            .clip(RoundedCornerShape(roundedCornerShape))
                     )
                     Box(
                         modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = 4.dp)
+                            .align(Alignment.TopStart)
+                            .padding(top = 4.dp, start = 4.dp)
                     ) {
-                        var showOptionsMenu by remember { mutableStateOf(false) }
-                        IconButton(
-                            onClick = { showOptionsMenu = !showOptionsMenu }
-                        ) {
-                            Icon(Icons.Filled.MoreVert, null)
-                            options(showOptionsMenu) {
-                                showOptionsMenu = false
+                        if (isSelected != null) {
+                            if (isSelected) {
+                                val bgColor =
+                                    MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
+                                Icon(
+                                    Icons.Filled.CheckCircle,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .padding(4.dp)
+                                        .border(2.dp, bgColor, CircleShape)
+                                        .clip(CircleShape)
+                                        .background(bgColor)
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Filled.RadioButtonUnchecked,
+                                    tint = Color.White.copy(alpha = 0.7f),
+                                    contentDescription = null,
+                                    modifier = Modifier.padding(6.dp)
+                                )
                             }
                         }
                     }
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(8.dp)
-                    ) {
-                        IconButton(
-                            modifier = Modifier
-                                .background(
-                                    MaterialTheme.colorScheme.surface,
-                                    RoundedCornerShape(12.dp)
-                                )
-                                .then(Modifier.size(36.dp)),
-                            onClick = onPlay
-                        ) {
-                            Icon(Icons.Filled.PlayArrow, null)
-                        }
-                    }
+//                    Box(
+//                        modifier = Modifier
+//                            .align(Alignment.TopEnd)
+//                    ) {
+//                        var showOptionsMenu by remember { mutableStateOf(false) }
+//                        IconButton(
+//                            modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.4f)),
+//                            onClick = { showOptionsMenu = !showOptionsMenu }
+//                        ) {
+//                            Icon(Icons.Filled.MoreVert, null)
+//                            options(showOptionsMenu) {
+//                                showOptionsMenu = false
+//                            }
+//                        }
+//                    }
+//                    Box(
+//                        modifier = Modifier
+//                            .align(Alignment.BottomStart)
+//                            .padding(8.dp)
+//                    ) {
+//                        IconButton(
+//                            modifier = Modifier
+//                                .background(
+//                                    MaterialTheme.colorScheme.surface,
+//                                    RoundedCornerShape(12.dp)
+//                                )
+//                                .then(Modifier.size(36.dp)),
+//                            onClick = onPlay
+//                        ) {
+//                            Icon(Icons.Filled.PlayArrow, null)
+//                        }
+//                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -136,8 +182,9 @@ fun MediaItemListCard(
     leading: @Composable () -> Unit = {},
     onShowOptionsMenu: (() -> Unit)? = null,
     thumbnailLabel: (@Composable () -> Unit)? = null,
-    onClick: () -> Unit ,
+    onClick: () -> Unit,
     showHeartIcon: Boolean = false,
+    isSelected: Boolean? = null
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
