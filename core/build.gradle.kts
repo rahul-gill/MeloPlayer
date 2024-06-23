@@ -69,7 +69,7 @@ dependencies {
 implementation(libs.androidx.compose.icons.extended)
     implementation(libs.color.picker)
 
-    implementation(libs.androidx.media3.session)
+    implementation(libs.androidx.media)
 
     implementation(libs.coil.compose)
 

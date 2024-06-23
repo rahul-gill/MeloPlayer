@@ -6,6 +6,7 @@ import android.provider.MediaStore
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -14,40 +15,41 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import meloplayer.app.prefs.PreferenceManager
 import meloplayer.core.prefs.BooleanPreference
 import meloplayer.core.prefs.FloatPreference
 import meloplayer.core.prefs.LongPreference
 import meloplayer.core.prefs.Preference
 import meloplayer.core.prefs.enumPreference
+import meloplayer.core.startup.applicationContextGlobal
 import kotlin.coroutines.CoroutineContext
 
+
+
+@OptIn(ExperimentalCoroutinesApi::class)
 class PlaybackManger(
     context: Context,
-    loopMode: Preference<LoopMode> = enumPreference("playback_loop_mode", LoopMode.All),
-    shuffleEnabled: Preference<Boolean> = BooleanPreference("playback_shuffle_mode", false),
+    private var coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob()),
+    loopMode: Preference<LoopMode> = PreferenceManager.loopMode,
+    shuffleEnabled: Preference<Boolean> = PreferenceManager.isShuffleOn,
     playbackSpeedPref: Preference<Float> = FloatPreference("playback_speed", 1f),
     playbackPitchPref: Preference<Float> = FloatPreference("playback_pitch", 1f),
     fadeDurationPref: Preference<Long> = LongPreference("playback_fade_duration_millis", 1000),
     onQueueEvent: (PlaybackQueueManager, QueueEvent) -> Unit = { _, _ -> },
     //onError: () -> Unit = {}
 ) {
-    private val job = SupervisorJob()
-    private val errorHandler = CoroutineExceptionHandler { coroutineContext, throwable ->
-        //TODO
+    
+    fun setScope(scope: CoroutineScope){
+//        coroutineScope.cancel()
+//        coroutineScope = scope
     }
-    private val coroutineScope = object : CoroutineScope {
-        override val coroutineContext: CoroutineContext
-            get() = job + errorHandler + Dispatchers.Main
-
-    }
-
+    
     val queueManager =
         PlaybackQueueManager.getImpl(coroutineScope, loopMode, shuffleEnabled, onQueueEvent)
     val player = MeloPlayer.getImpl(context, playbackSpeedPref, playbackPitchPref, coroutineScope)
 
 
     fun release() {
-        coroutineScope.cancel()
         player.release()
     }
 
@@ -123,5 +125,11 @@ class PlaybackManger(
             }
             goToNextSong()
         }.launchIn(coroutineScope)
+    }
+    
+    companion object {
+        val instance by lazy { 
+            PlaybackManger(context = applicationContextGlobal)
+        }
     }
 }

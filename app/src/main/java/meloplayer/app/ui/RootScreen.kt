@@ -31,6 +31,7 @@ import dev.olshevski.navigation.reimagined.rememberNavController
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import meloplayer.app.playback.PlaybackManger
+import meloplayer.app.playback.session.PlaybackService
 import meloplayer.app.ui.screen.AlbumListScreen
 import meloplayer.app.ui.screen.ArtistListScreen
 import meloplayer.app.ui.screen.SongListScreen
@@ -46,9 +47,8 @@ enum class TabScreen {
     ForYou, Songs, Albums, Artists, Folders, Playlist
 }
 
-val playbackManager by lazy {
-    PlaybackManger(applicationContextGlobal)
-}
+val playbackManager
+    get() = PlaybackManger.instance
 
 @Composable
 fun RootScreen(
@@ -58,12 +58,12 @@ fun RootScreen(
     val sheetState = rememberPlayerSheetState()
     val coroutineScope = rememberCoroutineScope()
 
-    val currentSong by playbackManager.queueManager.currentItem
+    val currentSong = playbackManager.queueManager.currentItem
         .map { if (it == null) null else SongsRepository.instance.songById(it).getOrNull() }
         .collectAsStateWithLifecycle(
             initialValue = null
         )
-    val playbackProgress by playbackManager.player.playbackPosition.collectAsStateWithLifecycle()
+    val playbackProgress = playbackManager?.player?.playbackPosition?.collectAsStateWithLifecycle()
 
     PlayerSheetScaffold(
         sheetState = sheetState,
@@ -76,24 +76,24 @@ fun RootScreen(
             }
         },
         miniPlayerContent = { applyNavBarPadding ->
-            val currentSongThis = currentSong
+            val currentSongThis = currentSong?.value
             if (currentSongThis != null) {
                 MiniPlayer(
                     currentSong = currentSongThis,
-                    playbackProgress = playbackProgress?.let {
+                    playbackProgress = playbackProgress?.value?.let {
                         it.currentDurationMillis * 1f / it.totalDurationMillis
                     } ?: 0f,
                     onClick = {
                         coroutineScope.launch { sheetState.expandToFullPlayer() }
                     },
                     onSkipToPrevious = {
-                        playbackManager.skipToPrevious()
+                        playbackManager?.skipToPrevious()
                     },
                     onSkipToNext = {
-                        playbackManager.goToNextSong()
+                        playbackManager?.goToNextSong()
                     },
                     onSwitchPlayPause = {
-                        playbackManager.player.switchIsPlaying()
+                        playbackManager?.player?.switchIsPlaying()
                     },
                     insetPaddings = if (applyNavBarPadding) WindowInsets.navigationBars else null
                 )

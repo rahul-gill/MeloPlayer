@@ -66,9 +66,13 @@ dependencies {
     implementation(libs.color.picker)
 
     implementation(libs.sticky.head.grid)
+    implementation(libs.androidx.media)
 
 
-    implementation(libs.androidx.media3.session)
+    debugImplementation(files("libs/lib-decoder-ffmpeg-debug.aar"))
+    releaseImplementation(files("libs/lib-decoder-ffmpeg-release.aar"))
+
+
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     androidTestImplementation(libs.androidx.junit)

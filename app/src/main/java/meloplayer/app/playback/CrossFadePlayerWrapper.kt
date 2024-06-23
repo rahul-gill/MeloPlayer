@@ -3,13 +3,17 @@ package meloplayer.app.playback
 import android.content.Context
 import android.net.Uri
 import android.os.Handler
+import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.RenderersFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -105,13 +109,17 @@ private class CrossFadePlayerWrapper(
     //TODO this seems to be no good
     override val playbackPosition
         get() = flow {
+            println("before while of playbackPosition")
             while (true) {
-                emit(getCurrentPlaybackPosition())
+                println("in while of playbackPosition")
+                val pos = getCurrentPlaybackPosition()
+                println("emitting $pos")
+                emit(pos)
                 delay(1000)
             }
         }.conflate()
             .flowOn(Dispatchers.Main)
-            .stateIn(scope, SharingStarted.WhileSubscribed(), getCurrentPlaybackPosition())
+            .stateIn(scope, SharingStarted.Eagerly, getCurrentPlaybackPosition())
 
     override fun switchIsPlaying() {
         if (player.player.isPlaying)
@@ -159,6 +167,7 @@ private class CrossFadePlayerWrapper(
 
 
     private fun getCurrentPlaybackPosition(): PlaybackPosition? {
+        println("getCurrentPlaybackPosition")
         return if (player.player.contentDuration == C.TIME_UNSET) {
             null
         } else {
@@ -182,10 +191,15 @@ private class ExoPlayerFaderWrapper(
 
     var fader: Fader? = null
 
+    @OptIn(UnstableApi::class)
     private fun createExoPlayerInstance() =
         ExoPlayer.Builder(context)
             .setHandleAudioBecomingNoisy(true)
+            .setRenderersFactory(DefaultRenderersFactory(context).apply {
+                setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+            })
             .build().also { exo ->
+
                 exo.playWhenReady = false
                 exo.playbackParameters = PlaybackParameters(speed, pitch)
                 exo.addListener(@UnstableApi object : Player.Listener {
@@ -194,6 +208,9 @@ private class ExoPlayerFaderWrapper(
                     }
 
                     override fun onEvents(player: Player, events: Player.Events) {
+                        if(events.contains(Player.EVENT_IS_PLAYING_CHANGED)){
+                            onPlayPauseChange(exo.isPlaying)
+                        }
                         if (events.contains(Player.EVENT_PLAYER_ERROR)) {
                             onError()
                         }

@@ -1,6 +1,8 @@
 package meloplayer.app
 
+import android.content.Intent
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -12,6 +14,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import meloplayer.app.playback.session.PlaybackGlue
+import meloplayer.app.playback.session.PlaybackService
 import meloplayer.app.prefs.PreferenceManager
 import meloplayer.app.ui.RootScreen
 import meloplayer.core.ui.AppTheme
@@ -22,6 +26,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        PlaybackGlue.instance.onStartImpl()
+
+        val intent = Intent(this, PlaybackService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            println("start-service-1")
+            startForegroundService(intent)
+        } else {
+            println("start-service-2")
+            startService(intent)
+        }
+
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(
                 Color.TRANSPARENT, Color.TRANSPARENT

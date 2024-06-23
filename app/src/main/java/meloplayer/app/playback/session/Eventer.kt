@@ -1,6 +1,5 @@
 package meloplayer.app.playback.session
 
-
 typealias EventSubscriber<T> = (T) -> Unit
 typealias EventUnsubscribeFn = () -> Unit
 

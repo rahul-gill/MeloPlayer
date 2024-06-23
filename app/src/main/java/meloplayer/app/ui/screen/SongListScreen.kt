@@ -1,12 +1,10 @@
 package meloplayer.app.ui.screen
 
 import android.content.ContentUris
-import android.content.res.Configuration
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -15,18 +13,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -38,7 +31,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -62,15 +54,12 @@ import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.toIntRect
@@ -85,9 +74,7 @@ import meloplayer.core.store.model.MediaStoreSong
 import meloplayer.core.store.model.SongSortOrder
 import meloplayer.core.store.model.toStringResource
 import meloplayer.core.store.repo.SongsRepository
-import meloplayer.core.ui.AppTheme
 import meloplayer.core.ui.components.MediaItemGridCard
-import meloplayer.core.ui.components.MediaItemListCard
 import meloplayer.core.ui.components.base.LargeTopAppBar
 import ua.hospes.lazygrid.GridCells
 import ua.hospes.lazygrid.LazyGridState
@@ -95,7 +82,6 @@ import ua.hospes.lazygrid.LazyVerticalGrid
 import ua.hospes.lazygrid.items
 import ua.hospes.lazygrid.rememberLazyGridState
 import java.time.format.DateTimeFormatter
-import kotlin.reflect.KClass
 
 
 private val monthFormatter by lazy {
@@ -123,9 +109,9 @@ fun SongListScreen(
 
     val onSongClick = { song: MediaStoreSong ->
         if (!songs.isNullOrEmpty()) {
-            playbackManager.startPlayingWithQueueInit(songsDir.map { it.id })
+            playbackManager?.startPlayingWithQueueInit(songsDir.map { it.id })
         }
-        playbackManager.playWithId(song.id)
+        playbackManager?.playWithId(song.id)
 
     }
     LaunchedEffect(key1 = songSortOrder) {
@@ -307,8 +293,8 @@ fun SongListScreen(
             SongsResponsiveGrid(
 
                 modifier = Modifier.padding(innerPadding),
-                selectedIds, songsNotNull, inSelectionMode, onSongClick
-            )
+                selectedIds, songsNotNull, inSelectionMode
+            ) { onSongClick(it) }
         } ?: Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -330,7 +316,7 @@ private fun SongSortOrderSelectSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         sheetState = sheetState,
-        onDismissRequest =  onDismiss
+        onDismissRequest = onDismiss
     ) {
         var newSortOrder by remember {
             mutableStateOf(songSortOrder)

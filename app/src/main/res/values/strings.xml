@@ -25,4 +25,7 @@
     <string name="stop">Stop</string>
     <string name="sort_songs_by">Sort songs by</string>
     <string name="clear_selection">Clear Selection</string>
+    <string name="disable_shuffle_mode">Disable Shuffle Mode</string>
+    <string name="enable_shuffle_mode">Enable Shuffle Mode</string>
+    <string name="change_repeat_mode">Change Repeat Mode</string>
 </resources>

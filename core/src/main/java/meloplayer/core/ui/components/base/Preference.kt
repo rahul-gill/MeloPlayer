@@ -240,13 +240,11 @@ fun SwitchPreference(
     leadingIcon: @Composable (() -> Unit)? = null,
     placeholderForIcon: Boolean = true,
 ) {
-    println(" 4523423 SwitchPreference isChecked: $isChecked")
     GenericPreference(
         title = title,
         onClick = {
             if (onCheckedChange != null) {
 
-                println(" 4523423 SwitchPreference set isChecked: ${!isChecked}")
                 onCheckedChange(!isChecked)
             }
         },
@@ -256,7 +254,6 @@ fun SwitchPreference(
         placeholderSpaceForLeadingIcon = placeholderForIcon,
         trailingContent = {
 
-            println("4523423 calling Switch isChecked: $isChecked")
             Switch(
                 modifier = modifier,
                 checked = isChecked,

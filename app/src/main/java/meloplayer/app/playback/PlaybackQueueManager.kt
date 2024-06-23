@@ -14,7 +14,13 @@ import meloplayer.core.prefs.Preference
 
 
 enum class LoopMode {
-    None, One, All
+    None, One, All;
+
+    fun toggleNextValue() = when (this) {
+        None -> All
+        One -> None
+        All -> One
+    }
 }
 
 enum class QueueEvent {
@@ -104,7 +110,7 @@ private class PlaybackQueueManagerImpl(
 
 
     private fun getCurrentItemValue(q: List<Long>, i: Int?): Long? {
-        println("getCurrentItemValue q=$q, i=$i")
+
         return if (i == null) null else q.getOrNull(i)
     }
 
@@ -232,11 +238,8 @@ private class PlaybackQueueManagerImpl(
         ) {
             return
         }
-        println("moveTrack fromIndex=$fromIndex toIndex=$toIndex")
         val currentQueue = _currentQueue.value.toMutableList()
-        println("moveTrack1: currentQueue:$currentQueue")
         val track = currentQueue.removeAt(fromIndex)
-        println("moveTrack2: currentQueue:$currentQueue")
         currentQueue.add(toIndex, track)
         val newCurrentIndex = when (val prev = _currentSongIndex.value) {
             null -> null

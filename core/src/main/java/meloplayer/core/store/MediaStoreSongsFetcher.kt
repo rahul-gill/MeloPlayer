@@ -85,11 +85,6 @@ private class MediaStoreSongsFetcherImpl(
         }
 
 
-        println("uri: $uri")
-        println("BaseProjection: ${BaseProjection.toList()}")
-        println("selection: $selection")
-        println("selectionValues: $selectionValues")
-        println("sortOrder: ${sortOrder?.getOrderByCondition}")
         try {
             val cursor = context.contentResolver.query(
                 uri,
@@ -104,7 +99,6 @@ private class MediaStoreSongsFetcherImpl(
                 .filterNotNull()
                 .toList()
 
-            println("$songs")
             cursor.close()
             return Result.success(songs)
         } catch (ex: SecurityException) {

@@ -345,7 +345,6 @@ private fun Modifier.pagerTransitionVerticalFlip(
     val position = -pagerState.getOffsetDistanceInPages(page)
     translationX = -position * size.width
     cameraDistance = 2000f
-    println("Page: $page position:$position")
 
     when {
         position < -1 -> {     // [-Infinity,-1)
@@ -385,7 +384,6 @@ private fun Modifier.pagerTransitionHorizontalFlip(
     val position = -pagerState.getOffsetDistanceInPages(page)
     translationX = -position * size.width
     cameraDistance = 2000f
-    println("Page: $page position:$position")
 
     when {
         position < -1 -> {     // [-Infinity,-1)
