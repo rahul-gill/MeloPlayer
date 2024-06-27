@@ -36,7 +36,9 @@ class MediaSessionCallbackImpl(
 
     override fun onStop() {
         super.onStop()
-        onStop()
+        if(playbackManger.player.isPlaying.value){
+            playbackManger.player.switchIsPlaying()
+        }
     }
 
     override fun onSeekTo(pos: Long) {

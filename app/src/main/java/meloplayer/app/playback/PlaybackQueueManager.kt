@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import meloplayer.core.prefs.Preference
+import java.util.concurrent.BlockingQueue
 
 
 enum class LoopMode {
@@ -28,7 +29,7 @@ enum class QueueEvent {
     QueueCleared,
     QueueUpdated
 }
-//TODO; currentItem and SongIndex not in sync
+
 interface PlaybackQueueManager {
     val currentQueue: StateFlow<List<Long>>
 

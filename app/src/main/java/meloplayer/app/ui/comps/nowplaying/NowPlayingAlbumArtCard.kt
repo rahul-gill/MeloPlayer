@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -25,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import meloplayer.core.store.MediaStoreUtils
 import meloplayer.core.ui.components.nowplaying.NowPlayingAlbumArtTransitionStyle
 import meloplayer.core.ui.components.nowplaying.applyTransitionStyle
 
@@ -33,8 +35,8 @@ import meloplayer.core.ui.components.nowplaying.applyTransitionStyle
 @OptIn(ExperimentalFoundationApi::class)
 fun NowPlayingAlbumArtCard(
     currentItemIndex: Int,
-    playItemAtIndex: (Int) -> Unit,
-    playingQueue: List<Uri>,
+    playItem: (Long) -> Unit,
+    playingQueue: List<Long>,
     modifier: Modifier = Modifier,
     nowPlayingAlbumArtStyle: NowPlayingAlbumArtStyle = NowPlayingAlbumArtStyle.Circular,
     transitionStyle: NowPlayingAlbumArtTransitionStyle = NowPlayingAlbumArtTransitionStyle.Fade
@@ -43,13 +45,14 @@ fun NowPlayingAlbumArtCard(
         rememberPagerState(pageCount = { playingQueue.size }, initialPage = currentItemIndex)
 
     LaunchedEffect(pagerState.currentPage) {
-        if (pagerState.currentPage != currentItemIndex) {
-            playItemAtIndex(pagerState.currentPage)
+        val item = playingQueue.getOrNull(pagerState.currentPage)
+        if (pagerState.currentPage != currentItemIndex &&  item != null) {
+            playItem(item)
         }
     }
 
     HorizontalPager(
-        modifier = modifier,
+        modifier = Modifier.statusBarsPadding().then(modifier),
         state = pagerState
     ) { page ->
         val transitionModifier = Modifier.applyTransitionStyle(transitionStyle, pagerState, page)
@@ -57,7 +60,7 @@ fun NowPlayingAlbumArtCard(
             Modifier.getAlbumArtPagerModifier(nowPlayingAlbumArtStyle)
         }
         AsyncImage(
-            model = playingQueue[page],
+            model = MediaStoreUtils.getArtworkUriForSong(playingQueue[page]),
             null,
             modifier = Modifier
                 .then(transitionModifier)
@@ -132,7 +135,7 @@ private fun NowPlayingAlbumArtCardPreview() {
         Column(Modifier.fillMaxSize()) {
             NowPlayingAlbumArtCard(
                 playingQueue = listOf(),
-                playItemAtIndex = {},
+                playItem = {},
                 currentItemIndex = 0
             )
         }

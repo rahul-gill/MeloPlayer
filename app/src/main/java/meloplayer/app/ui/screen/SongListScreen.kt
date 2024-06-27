@@ -38,6 +38,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
@@ -45,6 +46,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -67,9 +69,14 @@ import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import meloplayer.app.R
+import meloplayer.app.playbackx.PlaybackCommand
+import meloplayer.app.playbackx.PlaybackManagerImpl
+import meloplayer.app.playbackx.PlaybackState
 import meloplayer.app.ui.playbackManager
+import meloplayer.core.startup.applicationContextGlobal
 import meloplayer.core.store.model.MediaStoreSong
 import meloplayer.core.store.model.SongSortOrder
 import meloplayer.core.store.model.toStringResource
@@ -88,6 +95,10 @@ private val monthFormatter by lazy {
     DateTimeFormatter.ofPattern("MMMM yyyy")
 }
 
+private val playbackX  by lazy {
+    PlaybackManagerImpl(applicationContextGlobal)
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SongListScreen(
@@ -95,6 +106,7 @@ fun SongListScreen(
     var songSortOrder: SongSortOrder by remember {
         mutableStateOf(SongSortOrder.DateModified())
     }
+    val scope = rememberCoroutineScope()
     var songsDir by remember {
         mutableStateOf<List<MediaStoreSong>>(listOf())
     }
@@ -109,10 +121,25 @@ fun SongListScreen(
 
     val onSongClick = { song: MediaStoreSong ->
         if (!songs.isNullOrEmpty()) {
-            playbackManager?.startPlayingWithQueueInit(songsDir.map { it.id })
+            playbackX.startWithRestore(scope)
+            scope.launch {
+                playbackX.handleCommand(PlaybackCommand.AddItemsToQueue(
+                    items = songsDir.map { it.id }
+                ))
+                playbackX.handleCommand(PlaybackCommand.SetCurrentQueueItemIndex(
+                    index = songsDir.indexOfFirst { it.id == song.id }
+                ))
+                playbackX.handleCommand(PlaybackCommand.Play)
+            }
+            //playbackManager?.startPlayingWithQueueInit(songsDir.map { it.id })
         }
-        playbackManager?.playWithId(song.id)
+        //playbackManager?.playWithId(song.id)
 
+    }
+    DisposableEffect(key1 = Unit) {
+        onDispose {
+            playbackX.release()
+        }
     }
     LaunchedEffect(key1 = songSortOrder) {
         withContext(Dispatchers.IO) {

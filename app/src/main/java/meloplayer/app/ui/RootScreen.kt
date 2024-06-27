@@ -1,10 +1,10 @@
 package meloplayer.app.ui
 
+import android.content.ContentUris
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
@@ -17,10 +17,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.olshevski.navigation.reimagined.AnimatedNavHost
 import dev.olshevski.navigation.reimagined.NavAction
@@ -31,11 +31,12 @@ import dev.olshevski.navigation.reimagined.rememberNavController
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import meloplayer.app.playback.PlaybackManger
-import meloplayer.app.playback.session.PlaybackService
+import meloplayer.app.ui.comps.nowplaying.MiniPlayer
+import meloplayer.app.ui.comps.nowplaying.NowPlayingPanel
 import meloplayer.app.ui.screen.AlbumListScreen
 import meloplayer.app.ui.screen.ArtistListScreen
 import meloplayer.app.ui.screen.SongListScreen
-import meloplayer.core.startup.applicationContextGlobal
+import meloplayer.core.store.MediaStoreUtils.getArtworkUriForSong
 import meloplayer.core.store.repo.SongsRepository
 import meloplayer.core.ui.components.nowplaying.PlayerSheetScaffold
 import meloplayer.core.ui.components.nowplaying.rememberPlayerSheetState
@@ -63,26 +64,34 @@ fun RootScreen(
         .collectAsStateWithLifecycle(
             initialValue = null
         )
-    val playbackProgress = playbackManager?.player?.playbackPosition?.collectAsStateWithLifecycle()
-
+    val playbackProgressPos = playbackManager?.player?.playbackPosition?.collectAsStateWithLifecycle()
+    val queue by playbackManager.queueManager.currentQueue.collectAsStateWithLifecycle(initialValue = listOf())
+    val currentSongIndex by playbackManager.queueManager.currentSongIndex.collectAsStateWithLifecycle()
+    val playbackProgress = playbackProgressPos?.value?.let {
+        it.currentDurationMillis * 1f / it.totalDurationMillis
+    } ?: 0f
     PlayerSheetScaffold(
         sheetState = sheetState,
         fullPlayerContent = {
-            Surface(
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.fillMaxSize()
-            ) {
-
-            }
+            NowPlayingPanel(
+                playItem = { playbackManager.playWithId(it) },
+                playingQueueAlbumArtUris = queue,
+                currentItemIndex = currentSongIndex,
+                currentPlaybackProgress = playbackProgress,
+                setPlaybackProgress = { floatVal ->
+                    playbackProgressPos?.value?.let { posCurr ->
+                        playbackManager.player.seekTo((posCurr.totalDurationMillis * floatVal).toLong())
+                    }
+                }
+            )
         },
         miniPlayerContent = { applyNavBarPadding ->
             val currentSongThis = currentSong?.value
             if (currentSongThis != null) {
                 MiniPlayer(
+                    isPlaying = playbackManager.player.isPlaying.collectAsStateWithLifecycle().value,
                     currentSong = currentSongThis,
-                    playbackProgress = playbackProgress?.value?.let {
-                        it.currentDurationMillis * 1f / it.totalDurationMillis
-                    } ?: 0f,
+                    playbackProgress = playbackProgress,
                     onClick = {
                         coroutineScope.launch { sheetState.expandToFullPlayer() }
                     },

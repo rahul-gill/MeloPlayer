@@ -1,4 +1,4 @@
-package meloplayer.app.ui
+package meloplayer.app.ui.comps.nowplaying
 
 import android.content.ContentUris
 import androidx.compose.animation.AnimatedContent

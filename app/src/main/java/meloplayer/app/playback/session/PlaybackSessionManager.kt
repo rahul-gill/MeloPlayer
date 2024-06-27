@@ -80,7 +80,6 @@ private class PlaybackSessionManagerImpl(
     override fun update(
         req: RadioSessionUpdateRequest
     ) {
-        println("session-update-x")
         SessionNotificationUtils.updateMediaSessionDetails(mediaSession, req)
 
     }

@@ -32,30 +32,30 @@ import meloplayer.core.ui.components.nowplaying.PlayerSheetScaffoldDefaults
 
 @Composable
 fun NowPlayingPanel(
-    playItemAtIndex: (Int) -> Unit,
-    playingQueueAlbumArtUris: List<Uri>,
-    currentItemIndex: Int,
+    playItem: (Long) -> Unit,
+    playingQueueAlbumArtUris: List<Long>,
+    currentItemIndex: Int?,
     currentPlaybackProgress: Float,
     setPlaybackProgress: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if(playingQueueAlbumArtUris.isEmpty() || playingQueueAlbumArtUris.getOrNull(currentItemIndex) == null){
+    if(playingQueueAlbumArtUris.isEmpty() || currentItemIndex == null || playingQueueAlbumArtUris.getOrNull(currentItemIndex) == null){
         return
     }
     //TODO: from preferences
     var albumArtStyle by remember {
-        mutableStateOf(NowPlayingAlbumArtStyle.Circular)
+        mutableStateOf(NowPlayingAlbumArtStyle.RoundedCard)
     }
     var transitionStyle by remember {
-        mutableStateOf(NowPlayingAlbumArtTransitionStyle.Fade)
+        mutableStateOf(NowPlayingAlbumArtTransitionStyle.CubeOutRotation)
     }
 
     val layoutTypeHorizontal =  PlayerSheetScaffoldDefaults.calculateIsNavBarType(currentWindowAdaptiveInfo())
-    if(layoutTypeHorizontal){
+    if(!layoutTypeHorizontal){
         Row(modifier = modifier) {
             NowPlayingAlbumArtCard(
                 currentItemIndex,
-                playItemAtIndex,
+                playItem,
                 playingQueueAlbumArtUris,
                 Modifier.fillMaxHeight().aspectRatio(1f).displayCutoutPadding(),
                 albumArtStyle,
@@ -97,7 +97,7 @@ fun NowPlayingPanel(
     else Column(modifier = modifier) {
         NowPlayingAlbumArtCard(
             currentItemIndex,
-            playItemAtIndex,
+            playItem,
             playingQueueAlbumArtUris,
             Modifier,
             albumArtStyle,

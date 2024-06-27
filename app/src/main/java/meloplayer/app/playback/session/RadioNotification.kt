@@ -60,7 +60,6 @@ private class RadioNotificationImpl(
 
 
     override fun update(notification: Notification) {
-        println("notification-update-x")
         runCatching {
             if (
                 ActivityCompat.checkSelfPermission(

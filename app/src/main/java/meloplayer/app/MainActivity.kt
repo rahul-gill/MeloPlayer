@@ -30,13 +30,12 @@ class MainActivity : ComponentActivity() {
         PlaybackGlue.instance.onStartImpl()
 
         val intent = Intent(this, PlaybackService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            println("start-service-1")
-            startForegroundService(intent)
-        } else {
-            println("start-service-2")
-            startService(intent)
-        }
+        //TODO
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//            startForegroundService(intent)
+//        } else {
+//            startService(intent)
+//        }
 
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(

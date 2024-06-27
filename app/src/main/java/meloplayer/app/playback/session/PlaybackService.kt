@@ -35,7 +35,6 @@ class PlaybackService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         instance = this
-        println("onStartCommand")
         events.dispatch(RadioNotificationServiceEvents.START)
         return START_NOT_STICKY
     }

@@ -77,8 +77,7 @@ class PlaybackGlue(private val context: Context = applicationContextGlobal) {
     }
 
     fun onStartImpl() {
-        println("onStartImpl")
-        playbackManager.setScope(coroutineScope)
+        playbackManager.start(coroutineScope)
         sessionManager.start()
         notificationManager.start()
         PlaybackService.events.subscribe { event ->
@@ -100,7 +99,7 @@ class PlaybackGlue(private val context: Context = applicationContextGlobal) {
                     }
                 }
 
-                RadioNotificationServiceEvents.STOP -> TODO()
+                RadioNotificationServiceEvents.STOP -> println("STOp called")
             }
         }
 
@@ -110,7 +109,6 @@ class PlaybackGlue(private val context: Context = applicationContextGlobal) {
         val loopMode = PreferenceManager.loopMode.observableValue
         val position = playbackManager.player.playbackPosition
         val currentSong = playbackManager.queueManager.currentItem
-        println("before somevalue")
         combine(
             isPlaying,
             shuffleMode,
@@ -118,7 +116,6 @@ class PlaybackGlue(private val context: Context = applicationContextGlobal) {
             position,
             currentSong
         ) { isPlayingNow, _, _, positionNow, currentSongNow ->
-            println("Some-values $isPlayingNow $currentSongNow $positionNow")
             if (currentSongNow != null && positionNow != null) {
                 val req = buildUpdateRequest(
                     sessionManager.mediaSession,
@@ -181,16 +178,13 @@ class PlaybackGlue(private val context: Context = applicationContextGlobal) {
         isPlaying: Boolean,
         playbackPosition: PlaybackPosition
     ): RadioSessionUpdateRequest? {
-        println("buildUpdateRequest start")
         val song = SongsRepository.instance.songById(songId).getOrNull() ?: return null
-        println("buildUpdateRequest song:$song")
         val artworkUri = MediaStoreUtils.getArtworkUriForSong(song.id)
         val artworkBitmap = MediaStoreUtils.getArtworkBitmap(context, songId)
 
 
         if (songId != song.id) return null
 
-        println("actual buildUpdateRequest")
 
         //actual updates
         if (!mediaSession.isActive) {

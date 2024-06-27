@@ -8,27 +8,24 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
-import androidx.media3.common.Timeline
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.RenderersFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.plus
 import meloplayer.app.playback.utils.Fader
 import meloplayer.core.prefs.Preference
 
@@ -36,10 +33,6 @@ import meloplayer.core.prefs.Preference
 data class PlaybackPosition(
     val totalDurationMillis: Long, val currentDurationMillis: Long
 )
-
-//enum class MeloPlayerEvent {
-//    PlayingChanged
-//}
 
 interface MeloPlayer {
     val isPlaying: StateFlow<Boolean>
@@ -49,46 +42,102 @@ interface MeloPlayer {
     fun setSpeed(value: Float)
     fun setPitch(value: Float)
     fun setNextUri(uri: Uri)
+    fun start(coroutineScope: CoroutineScope)
     fun release()
 
     companion object {
         fun getImpl(
             context: Context,
             playbackSpeedPref: Preference<Float>,
-            playbackPitchPref: Preference<Float>,
-            scope: CoroutineScope
+            playbackPitchPref: Preference<Float>
         ): MeloPlayer = CrossFadePlayerWrapper(
-            context, playbackSpeedPref, playbackPitchPref, scope = scope
+            context, playbackSpeedPref, playbackPitchPref
         )
     }
 }
 
-
-/**
- * Single instance is enough
- */
 private class CrossFadePlayerWrapper(
     private val context: Context,
     private val playbackSpeedPref: Preference<Float>,
     private val playbackPitchPref: Preference<Float>,
     //private val onPlayerEvent: (MeloPlayerEvent) -> Unit = {},
-    private val scope: CoroutineScope
 ) : MeloPlayer {
+    private lateinit var scope: CoroutineScope
     private val _isPlaying = MutableStateFlow(false)
+
+    var dontSetPosition = false
     override val isPlaying
         get() = _isPlaying
-    private val onPlayPauseChange =
-        { newValue: Boolean ->
-            //onPlayerEvent(MeloPlayerEvent.PlayingChanged)
-            _isPlaying.update { newValue }
+    private val onPlayPauseChange: () -> Unit =
+        {
+            _isPlaying.update { player.player.isPlaying }
         }
     private var player = ExoPlayerFaderWrapper(
         context, playbackSpeedPref.value, playbackPitchPref.value,
         onPlayPauseChange = onPlayPauseChange
     )
+    private val _playbackPosition = MutableStateFlow<PlaybackPosition?>(null)
 
 
-    init {
+    //TODO this seems to be no good
+    override val playbackPosition
+        get() = _playbackPosition
+
+    override fun switchIsPlaying() {
+        if (player.player.isPlaying)
+            player.player.pause()
+        else
+            player.player.play()
+    }
+
+    override fun seekTo(millis: Long) {
+        scope.launch {
+            val currentPos = _playbackPosition.value
+
+            player.player.seekTo(millis)
+            if (millis < player.player.contentDuration && currentPos != null) {
+                _playbackPosition.update {
+                    currentPos.copy(currentDurationMillis = millis)
+                }
+                dontSetPosition = true
+                delay(1500)
+                dontSetPosition = false
+            }
+        }
+    }
+
+    override fun setSpeed(value: Float) {
+        playbackSpeedPref.setValue(value)
+    }
+
+    override fun setPitch(value: Float) {
+        playbackPitchPref.setValue(value)
+    }
+
+    override fun setNextUri(uri: Uri) {
+        val thisPlayer = player
+
+        val nextPlayer =
+            ExoPlayerFaderWrapper(
+                context, playbackSpeedPref.value, playbackPitchPref.value,
+                onPlayPauseChange = onPlayPauseChange
+            )
+        thisPlayer.removeListener()
+        player = nextPlayer
+        run stopCurrentPlayback@{
+            thisPlayer.setVolumeGraduallyTo(to = 0f,
+                onFadeComplete = { thisPlayer.player.release() })
+        }
+        nextPlayer.setMediaItemUriAndPrepare(uri, onPrepared = {
+            nextPlayer.setVolumeGraduallyTo(
+                startingVolume = 0f, to = 1f
+            )
+            nextPlayer.player.play()
+        })
+    }
+
+    override fun start(coroutineScope: CoroutineScope) {
+        scope = coroutineScope + SupervisorJob(coroutineScope.coroutineContext.job)
         playbackSpeedPref.observableValue
             .onEach {
                 player.player.playbackParameters = player.player.playbackParameters.withSpeed(it)
@@ -103,71 +152,31 @@ private class CrossFadePlayerWrapper(
             }
             .flowOn(Dispatchers.Main)
             .launchIn(scope)
-    }
 
-
-    //TODO this seems to be no good
-    override val playbackPosition
-        get() = flow {
-            println("before while of playbackPosition")
+        flow {
             while (true) {
-                println("in while of playbackPosition")
                 val pos = getCurrentPlaybackPosition()
-                println("emitting $pos")
                 emit(pos)
                 delay(1000)
             }
-        }.conflate()
-            .flowOn(Dispatchers.Main)
-            .stateIn(scope, SharingStarted.Eagerly, getCurrentPlaybackPosition())
-
-    override fun switchIsPlaying() {
-        if (player.player.isPlaying)
-            player.player.pause()
-        else
-            player.player.play()
-        //onPlayerEvent(MeloPlayerEvent.PlayingChanged)
-    }
-
-    override fun seekTo(millis: Long) {
-        player.player.seekTo(millis)
-    }
-
-    override fun setSpeed(value: Float) {
-        playbackSpeedPref.setValue(value)
-    }
-
-    override fun setPitch(value: Float) {
-        playbackPitchPref.setValue(value)
-    }
-
-    override fun setNextUri(uri: Uri) {
-        val thisPlayer = player
-        val nextPlayer =
-            ExoPlayerFaderWrapper(
-                context, playbackSpeedPref.value, playbackPitchPref.value,
-                onPlayPauseChange = onPlayPauseChange
-            )
-        player = nextPlayer
-        run stopCurrentPlayback@{
-            thisPlayer.setVolumeGraduallyTo(to = 0f,
-                onFadeComplete = { thisPlayer.player.release() })
         }
-        nextPlayer.setMediaItemUriAndPrepare(uri, onPrepared = {
-            nextPlayer.setVolumeGraduallyTo(
-                startingVolume = 0f, to = 1f
-            )
-            nextPlayer.player.play()
-        })
+            .flowOn(Dispatchers.Main)
+            .onEach { new ->
+                if (!dontSetPosition) {
+                    _playbackPosition.update { new }
+                }
+            }
+            .launchIn(scope)
+
     }
 
     override fun release() {
+        scope.cancel()
         player.release()
     }
 
 
     private fun getCurrentPlaybackPosition(): PlaybackPosition? {
-        println("getCurrentPlaybackPosition")
         return if (player.player.contentDuration == C.TIME_UNSET) {
             null
         } else {
@@ -185,11 +194,32 @@ private class ExoPlayerFaderWrapper(
     private val speed: Float,
     private val pitch: Float,
     private val onError: () -> Unit = {},
-    private val onPlayPauseChange: (isPlaying: Boolean) -> Unit = {}
+    private val onPlayPauseChange: () -> Unit = {}
 ) {
-    val player = createExoPlayerInstance()
 
     var fader: Fader? = null
+
+    private val playerListener = @UnstableApi object : Player.Listener {
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            onPlayPauseChange()
+        }
+
+        override fun onEvents(player: Player, events: Player.Events) {
+            if (events.contains(Player.EVENT_IS_PLAYING_CHANGED)) {
+                onPlayPauseChange()
+            }
+            if (events.contains(Player.EVENT_PLAYER_ERROR)) {
+                onError()
+            }
+        }
+    }
+
+    val player = createExoPlayerInstance()
+
+    fun removeListener() {
+        player.removeListener(playerListener)
+    }
+
 
     @OptIn(UnstableApi::class)
     private fun createExoPlayerInstance() =
@@ -199,23 +229,9 @@ private class ExoPlayerFaderWrapper(
                 setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
             })
             .build().also { exo ->
-
                 exo.playWhenReady = false
                 exo.playbackParameters = PlaybackParameters(speed, pitch)
-                exo.addListener(@UnstableApi object : Player.Listener {
-                    override fun onPlaybackStateChanged(playbackState: Int) {
-                        onPlayPauseChange(exo.isPlaying)
-                    }
-
-                    override fun onEvents(player: Player, events: Player.Events) {
-                        if(events.contains(Player.EVENT_IS_PLAYING_CHANGED)){
-                            onPlayPauseChange(exo.isPlaying)
-                        }
-                        if (events.contains(Player.EVENT_PLAYER_ERROR)) {
-                            onError()
-                        }
-                    }
-                })
+                exo.addListener(playerListener)
             }
 
 
