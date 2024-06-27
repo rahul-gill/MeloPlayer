@@ -20,7 +20,7 @@ open class EventSourceImpl<T> : EventSource<T> {
         subscribers.remove(subscriber)
     }
 
-    protected fun dispatchEvent(event: T) {
+    fun dispatchEvent(event: T) {
         subscribers.forEach { it(event) }
     }
 

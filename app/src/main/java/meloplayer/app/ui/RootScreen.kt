@@ -48,8 +48,8 @@ enum class TabScreen {
     ForYou, Songs, Albums, Artists, Folders, Playlist
 }
 
-val playbackManager
-    get() = PlaybackManger.instance
+//val playbackManager
+//    get() = PlaybackManger.instance
 
 @Composable
 fun RootScreen(

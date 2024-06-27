@@ -25,7 +25,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".playback.session.PlaybackService"
+        <service android:name=".playbackx.service.PlaybackServiceX"
             android:foregroundServiceType="mediaPlayback"
             />
     </application>

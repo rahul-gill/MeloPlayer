@@ -10,7 +10,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationCompat
 import meloplayer.app.MainActivity
 import meloplayer.app.R
-import meloplayer.app.playback.LoopMode
+import meloplayer.app.playbackx.RepeatMode
 
 object SessionNotificationUtils {
 
@@ -41,7 +41,7 @@ object SessionNotificationUtils {
                     }
                     putLong(
                         MediaMetadataCompat.METADATA_KEY_DURATION,
-                        req.playbackPosition.totalDurationMillis
+                        req.playbackPosition.totalMills
                     )
                     build()
                 }
@@ -53,7 +53,7 @@ object SessionNotificationUtils {
                             req.isPlaying -> PlaybackStateCompat.STATE_PLAYING
                             else -> PlaybackStateCompat.STATE_PAUSED
                         },
-                        req.playbackPosition.currentDurationMillis,
+                        req.playbackPosition.currentMillis,
                         1f
                     )
                     setActions(
@@ -146,19 +146,20 @@ object SessionNotificationUtils {
             )
             addAction(
                 when (req.loopMode) {
-                    LoopMode.None -> context.createAction(
+
+                    RepeatMode.Off -> context.createAction(
                         R.drawable.repeat_mode,
                         context.getString(R.string.change_repeat_mode),
                         MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName
                     )
 
-                    LoopMode.One -> context.createAction(
+                    RepeatMode.One -> context.createAction(
                         R.drawable.repeat_mode_one,
                         context.getString(R.string.change_repeat_mode),
                         MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName
                     )
 
-                    LoopMode.All -> context.createAction(
+                    RepeatMode.All -> context.createAction(
                         R.drawable.repeat_mode_all,
                         context.getString(R.string.change_repeat_mode),
                         MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName

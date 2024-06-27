@@ -7,13 +7,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.MediaSessionCompat.Callback
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import meloplayer.app.R
-import meloplayer.app.playback.PlaybackPosition
-import meloplayer.app.prefs.PreferenceManager
-import meloplayer.core.store.MediaStoreUtils
-import meloplayer.core.store.repo.SongsRepository
 
 
 interface PlaybackSessionManager {
@@ -28,11 +22,10 @@ interface PlaybackSessionManager {
     companion object {
         fun getImpl(
             context: Context,
-            scope: CoroutineScope,
             mediaSessionCallback: Callback,
             handleAction: (MediaSessionAction) -> Unit
         ): PlaybackSessionManager = PlaybackSessionManagerImpl(
-            context, scope, mediaSessionCallback, handleAction
+            context, mediaSessionCallback, handleAction
         )
     }
 }
@@ -40,8 +33,7 @@ interface PlaybackSessionManager {
 
 private class PlaybackSessionManagerImpl(
     private val context: Context,
-    private val scope: CoroutineScope,
-    private val mediaSessionCallbackImpl: MediaSessionCompat.Callback,
+    private val mediaSessionCallbackImpl: Callback,
     private val handleAction: (MediaSessionAction) -> Unit
 ) : PlaybackSessionManager {
     override val mediaSession = MediaSessionCompat(context, MEDIA_SESSION_ID)
