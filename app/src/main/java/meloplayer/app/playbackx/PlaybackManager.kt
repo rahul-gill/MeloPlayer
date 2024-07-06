@@ -1,19 +1,26 @@
 package meloplayer.app.playbackx
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.StateFlow
 import java.time.LocalDateTime
 
 
-sealed class PlaybackState {
-    data object Stopped : PlaybackState()
+sealed class PlaybackStateX {
+    data object Empty : PlaybackStateX()
 
-    data class Ongoing(
-        val mediaItem: MediaItem,
-        val position: PlaybackTimeline,
+    /**
+     * currentItemIndex must be in queue index range, otherwise use Empty state
+     */
+    data class OnGoing(
         val isPlaying: Boolean,
-        val sleepTimer: SleepTimer? = null
-    ) : PlaybackState()
-
+        val queue: List<Long>,
+        val currentItemIndex: Int,
+        val timeline: PlaybackTimeline,
+        val sleepTimer: SleepTimer? = null,
+    ) : PlaybackStateX() {
+        val currentMediaItemId
+            get() = queue[currentItemIndex]
+    }
 }
 
 data class PlaybackParamsState(
@@ -33,18 +40,9 @@ data class PlaybackParamsState(
     val durationToSkipPreviousSongMillis: Long = 4000
 )
 
-sealed class PlaybackQueueState {
-    data object Empty : PlaybackQueueState()
-    data class NonEmpty(
-        val queue: List<Long>,
-        val currentItemIndex: Int
-    ) : PlaybackQueueState()
-}
-
 
 sealed class PlaybackCommand {
-    data object Stop : PlaybackCommand()
-
+    data object SwitchPlaying : PlaybackCommand()
     data object Play : PlaybackCommand()
     data object Pause : PlaybackCommand()
     data object SkipPrevious : PlaybackCommand()
@@ -67,13 +65,13 @@ sealed class PlaybackCommand {
 }
 
 enum class PlaybackEvents {
-    StartPlaying,
-    StopPlaying,
+    PlaybackCleared,
+
     ResumePlaying,
     PausePlaying,
 
     PlayingSongChanged,
-    SeekByUser,
+    PlayingPositionChanged,
 
     QueueModified,
     QueueIndexChanged,
@@ -91,12 +89,23 @@ enum class PlaybackEvents {
 }
 
 
-enum class RepeatMode { Off, One, All }
+enum class RepeatMode {
+    Off, One, All;
+
+    fun nextInShuffle() = when (this) {
+        Off -> All
+        One -> Off
+        All -> One
+    }
+}
+
 data class MediaItem(val id: Long)
-data class PlaybackTimeline(val currentMillis: Long, val totalMills: Long)
+sealed class PlaybackTimeline {
+    data object Unprepared: PlaybackTimeline()
+    data class Prepared(val currentMillis: Long, val totalMills: Long): PlaybackTimeline()
+}
 sealed class SongTransitionType {
     data object Simple : SongTransitionType()
-    data object Gapless : SongTransitionType()
     data class CrossFade(val fadeInDurationMillis: Long, val fadeOutDurationMillis: Long) :
         SongTransitionType()
 }
@@ -108,12 +117,11 @@ data class SleepTimer(
 )
 
 
-interface PlaybackManagerX : EventSource<PlaybackEvents> {
-    val playbackState: PlaybackState
+interface PlaybackManagerX {
     val playbackParamsState: PlaybackParamsState
-    val playbackQueueState: PlaybackQueueState
+    val playbackStateX: StateFlow<PlaybackStateX>
 
-    suspend fun handleCommand(command: PlaybackCommand)
+    fun handleCommand(command: PlaybackCommand)
 
     fun startWithRestore(parentScope: CoroutineScope)
     fun release()

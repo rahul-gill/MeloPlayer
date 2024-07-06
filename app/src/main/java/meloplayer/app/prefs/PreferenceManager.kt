@@ -1,7 +1,7 @@
 package meloplayer.app.prefs
 
 import androidx.compose.ui.graphics.Color
-import meloplayer.app.playback.LoopMode
+import meloplayer.app.playbackx.RepeatMode
 import meloplayer.core.prefs.BooleanPreference
 import meloplayer.core.prefs.LongPreference
 import meloplayer.core.prefs.customPreference
@@ -32,7 +32,7 @@ object PreferenceManager {
 
     //Playback related
     val isShuffleOn = BooleanPreference(key = "is_shuffle_on", defaultValue = true)
-    val loopMode = enumPreference(key = "loop_mode", defaultValue = LoopMode.All)
+    val loopMode = enumPreference(key = "repeat_mode", defaultValue = RepeatMode.All)
     val rewindBackDuration = LongPreference(key = "rewind_back_duration", defaultValue = 5000L)
     val forwardDuration = LongPreference(key = "forward_duration", defaultValue = 5000L)
 

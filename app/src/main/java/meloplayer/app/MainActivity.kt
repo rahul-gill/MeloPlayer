@@ -11,13 +11,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import meloplayer.app.playback.session.PlaybackGlue
-import meloplayer.app.playback.session.PlaybackService
+import meloplayer.app.playbackx.glue.PlaybackGlue
+import meloplayer.app.playbackx.service.PlaybackServiceX
 import meloplayer.app.prefs.PreferenceManager
-import meloplayer.app.ui.RootScreen
+import meloplayer.app.ui.screen.SongListScreen
 import meloplayer.core.ui.AppTheme
 import meloplayer.core.ui.ColorSchemeType
 
@@ -29,13 +28,6 @@ class MainActivity : ComponentActivity() {
 
         PlaybackGlue.instance.onStartImpl()
 
-        val intent = Intent(this, PlaybackService::class.java)
-        //TODO
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            startForegroundService(intent)
-//        } else {
-//            startService(intent)
-//        }
 
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(
@@ -65,7 +57,8 @@ class MainActivity : ComponentActivity() {
                         .fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    RootScreen()
+                    //RootScreen()
+                    SongListScreen()
                 }
             }
         }

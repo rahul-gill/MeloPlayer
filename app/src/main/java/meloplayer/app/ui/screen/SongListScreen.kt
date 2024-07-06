@@ -73,10 +73,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import meloplayer.app.R
 import meloplayer.app.playbackx.PlaybackCommand
-import meloplayer.app.playbackx.PlaybackManagerImpl
-import meloplayer.app.playbackx.PlaybackState
-import meloplayer.app.ui.playbackManager
-import meloplayer.core.startup.applicationContextGlobal
+import meloplayer.app.playbackx.PlaybackStateX
+import meloplayer.app.playbackx.glue.PlaybackGlue
 import meloplayer.core.store.model.MediaStoreSong
 import meloplayer.core.store.model.SongSortOrder
 import meloplayer.core.store.model.toStringResource
@@ -95,9 +93,6 @@ private val monthFormatter by lazy {
     DateTimeFormatter.ofPattern("MMMM yyyy")
 }
 
-private val playbackX  by lazy {
-    PlaybackManagerImpl(applicationContextGlobal)
-}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -121,26 +116,32 @@ fun SongListScreen(
 
     val onSongClick = { song: MediaStoreSong ->
         if (!songs.isNullOrEmpty()) {
-            playbackX.startWithRestore(scope)
-            scope.launch {
-                playbackX.handleCommand(PlaybackCommand.AddItemsToQueue(
+            if(PlaybackGlue.instance.playbackManagerX.playbackStateX.value is PlaybackStateX.Empty) {
+
+
+                PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.AddItemsToQueue(
                     items = songsDir.map { it.id }
                 ))
-                playbackX.handleCommand(PlaybackCommand.SetCurrentQueueItemIndex(
+                PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.SetCurrentQueueItemIndex(
                     index = songsDir.indexOfFirst { it.id == song.id }
                 ))
-                playbackX.handleCommand(PlaybackCommand.Play)
+                PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.Play)
+            } else {
+                PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.AddItemsToQueue(
+                    items = listOf(song.id)
+                ))
             }
+
             //playbackManager?.startPlayingWithQueueInit(songsDir.map { it.id })
         }
         //playbackManager?.playWithId(song.id)
 
     }
-    DisposableEffect(key1 = Unit) {
-        onDispose {
-            playbackX.release()
-        }
-    }
+//    DisposableEffect(key1 = Unit) {
+////        onDispose {
+////            playbackX.release()
+////        }
+//    }
     LaunchedEffect(key1 = songSortOrder) {
         withContext(Dispatchers.IO) {
             val songRes = SongsRepository.instance

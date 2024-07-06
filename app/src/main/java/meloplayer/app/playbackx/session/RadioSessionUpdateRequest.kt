@@ -1,4 +1,4 @@
-package meloplayer.app.playback.session
+package meloplayer.app.playbackx.session
 
 import android.graphics.Bitmap
 import android.net.Uri

@@ -1,4 +1,4 @@
-package meloplayer.app.playback.utils
+package meloplayer.app.playbackx.utils
 
 import android.bluetooth.BluetoothDevice
 import android.content.BroadcastReceiver

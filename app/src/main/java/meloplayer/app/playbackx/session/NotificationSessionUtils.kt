@@ -1,4 +1,4 @@
-package meloplayer.app.playback.session
+package meloplayer.app.playbackx.session
 
 import android.app.Notification
 import android.app.PendingIntent
@@ -10,9 +10,11 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationCompat
 import meloplayer.app.MainActivity
 import meloplayer.app.R
+import meloplayer.app.playbackx.PlaybackTimeline
 import meloplayer.app.playbackx.RepeatMode
 
-object SessionNotificationUtils {
+object NotificationSessionUtils {
+
 
     fun updateMediaSessionDetails(
         mediaSession: MediaSessionCompat,
@@ -39,10 +41,12 @@ object SessionNotificationUtils {
                         putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, it)
                         putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, it)
                     }
-                    putLong(
-                        MediaMetadataCompat.METADATA_KEY_DURATION,
-                        req.playbackPosition.totalMills
-                    )
+                    if (req.playbackPosition is PlaybackTimeline.Prepared) {
+                        putLong(
+                            MediaMetadataCompat.METADATA_KEY_DURATION,
+                            req.playbackPosition.totalMills
+                        )
+                    }
                     build()
                 }
             )
@@ -50,10 +54,13 @@ object SessionNotificationUtils {
                 PlaybackStateCompat.Builder().run {
                     setState(
                         when {
+                            req.playbackPosition == PlaybackTimeline.Unprepared -> PlaybackStateCompat.STATE_BUFFERING
                             req.isPlaying -> PlaybackStateCompat.STATE_PLAYING
                             else -> PlaybackStateCompat.STATE_PAUSED
                         },
-                        req.playbackPosition.currentMillis,
+                        if (req.playbackPosition is PlaybackTimeline.Prepared)
+                            req.playbackPosition.currentMillis
+                        else 0,
                         1f
                     )
                     setActions(

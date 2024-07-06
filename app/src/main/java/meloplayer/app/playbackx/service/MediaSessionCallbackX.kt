@@ -14,48 +14,48 @@ import meloplayer.app.playbackx.PlaybackManagerX
 
 class MediaSessionCallbackX(
     coroutineScope: CoroutineScope,
-    private val playbackManger: PlaybackManagerX
+    private val commandHandler: suspend (PlaybackCommand) -> Unit
 ) : MediaSessionCompat.Callback() {
     private val scope = coroutineScope + SupervisorJob(coroutineScope.coroutineContext.job)
     override fun onPlay() {
         super.onPlay()
         scope.launch {
-            playbackManger.handleCommand(PlaybackCommand.Play)
+            commandHandler(PlaybackCommand.Play)
         }
     }
 
     override fun onPause() {
         super.onPause()
         scope.launch {
-            playbackManger.handleCommand(PlaybackCommand.Pause)
+            commandHandler(PlaybackCommand.Pause)
         }
     }
 
     override fun onSkipToPrevious() {
         super.onSkipToPrevious()
         scope.launch {
-            playbackManger.handleCommand(PlaybackCommand.SkipPrevious)
+            commandHandler(PlaybackCommand.SkipPrevious)
         }
     }
 
     override fun onSkipToNext() {
         super.onSkipToNext()
         scope.launch {
-            playbackManger.handleCommand(PlaybackCommand.SkipNext)
+            commandHandler(PlaybackCommand.SkipNext)
         }
     }
 
     override fun onStop() {
         super.onStop()
         scope.launch {
-            playbackManger.handleCommand(PlaybackCommand.Pause)
+            commandHandler(PlaybackCommand.Pause)
         }
     }
 
     override fun onSeekTo(pos: Long) {
         super.onSeekTo(pos)
         scope.launch {
-            playbackManger.handleCommand(PlaybackCommand.SetPosition(pos))
+            commandHandler(PlaybackCommand.SetPosition(pos))
         }
     }
 
@@ -95,7 +95,7 @@ class MediaSessionCallbackX(
         return when (keyEvent?.keyCode) {
             KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
                 scope.launch {
-                    playbackManger.handleCommand(PlaybackCommand.SkipPrevious)
+                    commandHandler(PlaybackCommand.SkipPrevious)
                 }
                 true
             }
@@ -107,7 +107,7 @@ class MediaSessionCallbackX(
 
             KeyEvent.KEYCODE_MEDIA_NEXT -> {
                 scope.launch {
-                    playbackManger.handleCommand(PlaybackCommand.SkipNext)
+                    commandHandler(PlaybackCommand.SkipNext)
                 }
                 true
             }
@@ -116,7 +116,7 @@ class MediaSessionCallbackX(
             KeyEvent.KEYCODE_MEDIA_STOP,
             -> {
                 scope.launch {
-                    playbackManger.handleCommand(PlaybackCommand.Pause)
+                    commandHandler(PlaybackCommand.Pause)
                 }
                 true
             }

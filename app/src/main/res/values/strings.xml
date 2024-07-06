@@ -28,4 +28,5 @@
     <string name="disable_shuffle_mode">Disable Shuffle Mode</string>
     <string name="enable_shuffle_mode">Enable Shuffle Mode</string>
     <string name="change_repeat_mode">Change Repeat Mode</string>
+    <string name="loading">Loading</string>
 </resources>
