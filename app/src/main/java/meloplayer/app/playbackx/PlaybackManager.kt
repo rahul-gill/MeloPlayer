@@ -48,30 +48,6 @@ sealed class PlaybackCommand {
     data class SetCurrentQueueItemIndex(val index: Int) : PlaybackCommand()
 }
 
-enum class PlaybackEvents {
-    PlaybackCleared,
-
-    ResumePlaying,
-    PausePlaying,
-
-    PlayingSongChanged,
-    PlayingPositionChanged,
-
-    QueueModified,
-    QueueIndexChanged,
-
-    SpeedChanged,
-    PitchChanged,
-    ShuffleModeChanged,
-    RepeatModeChanged,
-    PauseFadeOutDurationChanged,
-    PlayFadeInDurationChanged,
-    SongTransitionTypeChanged,
-    ShouldPauseOnZeroVolumeChanged,
-    ShouldResumeOnExternalDeviceConnectChanged,
-    ExternalDeviceBackButtonBehaveChanged
-}
-
 
 enum class RepeatMode {
     Off, One, All;

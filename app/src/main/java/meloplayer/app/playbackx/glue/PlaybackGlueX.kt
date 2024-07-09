@@ -32,8 +32,7 @@ class PlaybackGlue(private val context: Context = applicationContextGlobal) {
     }
 
     val playbackManagerX: PlaybackManagerX = PlaybackManagerImplX(
-        context = context,
-        onEvents = { _, _ -> },
+        context = context
     )
     private val sessionManager by lazy {
         NotificationSessionManager.getImpl(

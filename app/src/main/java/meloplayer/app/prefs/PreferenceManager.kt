@@ -40,6 +40,8 @@ object PreferenceManager {
         val pitch = FloatPreference(key = "playback_pitch", defaultValue = 1f)
         val isShuffleOn = BooleanPreference(key = "is_shuffle_on", defaultValue = true)
         val loopMode = enumPreference(key = "repeat_mode", defaultValue = RepeatMode.All)
+
+
         val pauseFadeOutDurationMillis = LongPreference(key = "", defaultValue = 100)
         val playFadeInDurationMillis = LongPreference(key = "", defaultValue = 100)
 
