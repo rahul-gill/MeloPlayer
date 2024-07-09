@@ -4,27 +4,19 @@ import android.content.ContentUris
 import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.Looper
 import android.provider.MediaStore
-import androidx.compose.runtime.MutableState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.android.HandlerDispatcher
 import kotlinx.coroutines.android.asCoroutineDispatcher
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import meloplayer.app.prefs.PreferenceManager
 import java.util.ArrayDeque
 import java.util.Queue
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.ThreadFactory
-import java.util.concurrent.ThreadPoolExecutor
-import kotlin.jvm.Throws
 
 class PlaybackManagerImplX(
     private val context: Context,
@@ -40,37 +32,10 @@ class PlaybackManagerImplX(
     private val handler = Handler(handlerThread.looper)
     private var scope =
         CoroutineScope(SupervisorJob() + handler.asCoroutineDispatcher("PlaybackThreadDispatcher"))
-    private val mutex = Mutex()
 
-
-    private val posUpdate: (pos: Long) -> Unit = { pos ->
-        scope.launch {
-            mutex.withLock {
-                val currentPos = playbackStateX.value
-                val params = playbackParamsState.songTransitionType
-
-                if (currentPos is PlaybackStateX.OnGoing && currentPos.isPlaying) {
-                    val dur = when (params) {
-                        is SongTransitionType.CrossFade -> params.fadeOutDurationMillis
-                        SongTransitionType.Simple -> 10
-                    }
-                    println("posUpdate timeline:${currentPos.timeline} dur:$dur")
-                    if (currentPos.timeline is PlaybackTimeline.Prepared) {
-                        val contentDuration = playerWrapper.getContentDuration()
-                        if (currentPos.timeline.currentMillis + dur >= contentDuration) {
-                            skipToNext(currentPos)
-                        } else {
-                            onSetPositionCommand(currentPos, pos)
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     private lateinit var playerWrapper: MediaPlayerX
     private val randomNextIndexesHistory: Queue<Int> = ArrayDeque()
-    override var playbackParamsState: PlaybackParamsState = PlaybackParamsState()
     override var playbackStateX = MutableStateFlow<PlaybackStateX>(PlaybackStateX.Empty)
 
     private var isStarted = false
@@ -81,14 +46,18 @@ class PlaybackManagerImplX(
         scope =
             CoroutineScope(SupervisorJob() + handler.asCoroutineDispatcher("PlaybackThreadDispatcher"))
 
-        println("PlaybackManagerStart")
+
         scope.launch {
-            mutex.withLock {
+            run {
                 isStarted = true
                 withContext(Dispatchers.Main) {
-                    playerWrapper = MediaPlayerX(
+                    playerWrapper = MediaPlayerX.build(
                         context = context,
-                        onPosUpdate = posUpdate
+                        onAboutToEnd = {
+                            scope.launch {
+                                skipToNext(playbackStateX.value)
+                            }
+                        }
                     )
                 }
 
@@ -103,9 +72,9 @@ class PlaybackManagerImplX(
     }
 
     override fun release() {
-        println("PlaybackManagerRelease")
+
         scope.launch {
-            mutex.withLock {
+            run {
                 if (playbackStateX.value is PlaybackStateX.OnGoing) {
                     onPauseCommand(playbackStateX.value)
                 }
@@ -122,8 +91,8 @@ class PlaybackManagerImplX(
     override fun handleCommand(command: PlaybackCommand) {
 
         scope.launch {
-            mutex.withLock {
-                println("Received command: $command")
+            run {
+
                 when (command) {
                     is PlaybackCommand.AddItemsToQueue -> {
                         val (items, atIndex) = command
@@ -189,33 +158,35 @@ class PlaybackManagerImplX(
                 currentItemIndex = indexToSet,
                 timeline = PlaybackTimeline.Unprepared
             )
-            println("1StartUpdate")
+
             playbackStateX.value = currentQueueState
-            println("2EndUpdate")
+
             if (!currentQueueState.isPlaying) {
                 transitionToSongId(currentQueueState.currentMediaItemId)
             } else {
                 playerWrapper.setMediaItemUriAndPrepare(
                     uri = songIdToUri(toSetUri),
                     onPrepared = {
-                        val here = playbackStateX.value
-                        if (here is PlaybackStateX.OnGoing)
-                            playbackStateX.value =
-                                here.copy(
-                                    timeline = PlaybackTimeline.Prepared(
-                                        0,
-                                        totalMills = playerWrapper.getContentDuration()
+                        scope.launch {
+                            val here = playbackStateX.value
+                            if (here is PlaybackStateX.OnGoing)
+                                playbackStateX.value =
+                                    here.copy(
+                                        timeline = PlaybackTimeline.Prepared(
+                                            0,
+                                            totalMills = playerWrapper.getContentDuration()
+                                        )
                                     )
-                                )
-                        if (isStarted) onEvents(
-                            PlaybackEvents.PlayingPositionChanged,
-                            playbackStateX.value
-                        )
+                            if (isStarted) onEvents(
+                                PlaybackEvents.PlayingPositionChanged,
+                                playbackStateX.value
+                            )
+                        }
 
                     }
                 )
             }
-            println("dispatch(PlayingSongChanged) from set current queue index")
+
             if (isStarted) onEvents(PlaybackEvents.PlayingSongChanged, playbackStateX.value)
         }
     }
@@ -224,14 +195,14 @@ class PlaybackManagerImplX(
         currentPlayback: PlaybackStateX,
     ) {
         val durationToSkipPreviousMillis =
-            playbackParamsState.durationToSkipPreviousSongMillis
+            PreferenceManager.Playback.durationToSkipPreviousSongMillis.value
         if (currentPlayback is PlaybackStateX.OnGoing) {
             if (currentPlayback.timeline is PlaybackTimeline.Prepared && currentPlayback.timeline.currentMillis > durationToSkipPreviousMillis) {
                 onSetPositionCommand(currentPlayback, 0)
             } else {
 
                 val songToPlayIndex = when {
-                    playbackParamsState.shuffleModeOn && randomNextIndexesHistory.isNotEmpty() -> {
+                    PreferenceManager.Playback.isShuffleOn.value && randomNextIndexesHistory.isNotEmpty() -> {
                         randomNextIndexesHistory.poll()!!
                     }
 
@@ -239,7 +210,7 @@ class PlaybackManagerImplX(
                         currentPlayback.currentItemIndex - 1
                     }
 
-                    playbackParamsState.repeatMode == RepeatMode.All -> {
+                    PreferenceManager.Playback.loopMode.value == RepeatMode.All -> {
                         currentPlayback.queue.size - 1
                     }
 
@@ -257,12 +228,12 @@ class PlaybackManagerImplX(
             val coercedPos =
                 pos.coerceIn(0..currentPlaybackState.timeline.totalMills)
 
-            println("1StartUpdate")
+
 
             playbackStateX.value = currentPlaybackState.copy(
                 timeline = currentPlaybackState.timeline.copy(currentMillis = coercedPos)
             )
-            println("2EndUpdate")
+
             playerWrapper.seekTo(coercedPos)
         }
         if (isStarted) onEvents(PlaybackEvents.PlayingPositionChanged, playbackStateX.value)
@@ -271,7 +242,7 @@ class PlaybackManagerImplX(
     private suspend fun skipToNext(currentQueueState: PlaybackStateX) {
         if (currentQueueState is PlaybackStateX.OnGoing) {
             val nextSongIndex = when {
-                playbackParamsState.shuffleModeOn -> {
+                PreferenceManager.Playback.isShuffleOn.value -> {
                     randomNextIndexesHistory.add(currentQueueState.currentItemIndex)
                     val nextRand = (0 until currentQueueState.queue.size).random()
                     if (nextRand == currentQueueState.currentItemIndex)
@@ -284,14 +255,14 @@ class PlaybackManagerImplX(
                     currentQueueState.currentItemIndex + 1
                 }
 
-                playbackParamsState.repeatMode == RepeatMode.All -> {
+                PreferenceManager.Playback.loopMode.value == RepeatMode.All -> {
                     (currentQueueState.currentItemIndex + 1) % currentQueueState.queue.size
                 }
 
                 else -> null
             }
             if (nextSongIndex != null) {
-                println("3StartUpdate")
+
 
                 this.playbackStateX.value = currentQueueState.copy(
                     isPlaying = true,
@@ -299,7 +270,7 @@ class PlaybackManagerImplX(
                     timeline = PlaybackTimeline.Unprepared
                 )
 
-                println("3EndUpdate")
+
                 if (isStarted) onEvents(PlaybackEvents.PlayingSongChanged, playbackStateX.value)
                 transitionToSongId(currentQueueState.queue[nextSongIndex])
             } else {
@@ -310,19 +281,21 @@ class PlaybackManagerImplX(
 
 
     private suspend fun transitionToSongId(songId: Long) {
-        val params = playbackParamsState
-        when (params.songTransitionType) {
+        when (val type = PreferenceManager.Playback.songTransitionType.value) {
             is SongTransitionType.CrossFade -> {
-                val (fadeInMills, fadeOutMillis) = params.songTransitionType
+                val (fadeInMills, fadeOutMillis) = type
                 val thisPlayer = playerWrapper
 
-                val nextPlayer = withContext(Dispatchers.Main){
-                    MediaPlayerX(
+                val nextPlayer = withContext(Dispatchers.Main) {
+                    MediaPlayerX.build(
                         context,
-                        onPosUpdate = posUpdate
+                        onAboutToEnd = {
+                            scope.launch {
+                                skipToNext(playbackStateX.value)
+                            }
+                        }
                     )
                 }
-                thisPlayer.removeListener()
 
                 playerWrapper = nextPlayer
 
@@ -334,30 +307,31 @@ class PlaybackManagerImplX(
                 nextPlayer.setMediaItemUriAndPrepare(
                     uri = songIdToUri(songId),
                     onPrepared = {
-                        thisPlayer.cancelPosUpdate()
-                        nextPlayer.setVolumeGraduallyTo(
-                            startingVolume = 0f,
-                            to = 1f,
-                            fadeDuration = fadeInMills
-                        )
-
-                        println("4StartUpdate")
-                        val state = playbackStateX.value
-                        if (state is PlaybackStateX.OnGoing) {
-                            playbackStateX.value = state.copy(
-                                timeline = PlaybackTimeline.Prepared(
-                                    currentMillis = 0,
-                                    totalMills = nextPlayer.getContentDuration()
-                                )
+                        scope.launch {
+                            nextPlayer.setVolumeGraduallyTo(
+                                startingVolume = 0f,
+                                to = 1f,
+                                fadeDuration = fadeInMills
                             )
-                        }
 
-                        println("4EndUpdate")
-                        if (isStarted) onEvents(
-                            PlaybackEvents.PlayingPositionChanged,
-                            playbackStateX.value
-                        )
-                        nextPlayer.play()
+
+                            val state = playbackStateX.value
+                            if (state is PlaybackStateX.OnGoing) {
+                                playbackStateX.value = state.copy(
+                                    timeline = PlaybackTimeline.Prepared(
+                                        currentMillis = 0,
+                                        totalMills = nextPlayer.getContentDuration()
+                                    )
+                                )
+                            }
+
+
+                            if (isStarted) onEvents(
+                                PlaybackEvents.PlayingPositionChanged,
+                                playbackStateX.value
+                            )
+                            nextPlayer.play()
+                        }
                     })
             }
 
@@ -366,23 +340,25 @@ class PlaybackManagerImplX(
                     uri = songIdToUri(songId),
                     onPrepared = {
 
-                        println("5StartUpdate")
-                        val state = playbackStateX.value
-                        if (state is PlaybackStateX.OnGoing)
-                            playbackStateX.value = state.copy(
-                                timeline = PlaybackTimeline.Prepared(
-                                    currentMillis = 0,
-                                    totalMills = playerWrapper.getContentDuration()
+                        scope.launch {
+
+                            val state = playbackStateX.value
+                            if (state is PlaybackStateX.OnGoing)
+                                playbackStateX.value = state.copy(
+                                    timeline = PlaybackTimeline.Prepared(
+                                        currentMillis = 0,
+                                        totalMills = playerWrapper.getContentDuration()
+                                    )
                                 )
+
+
+
+                            if (isStarted) onEvents(
+                                PlaybackEvents.PlayingPositionChanged,
+                                playbackStateX.value
                             )
-
-                        println("5EndUpdate")
-
-                        if (isStarted) onEvents(
-                            PlaybackEvents.PlayingPositionChanged,
-                            playbackStateX.value
-                        )
-                        playerWrapper.play()
+                            playerWrapper.play()
+                        }
                     })
             }
         }
@@ -405,13 +381,13 @@ class PlaybackManagerImplX(
                 else -> prev
             }
 
-            println("6StartUpdate")
+
             playbackStateX.value = state.copy(
                 queue = queueNew,
                 currentItemIndex = newCurrentIndex
             )
 
-            println("6EndUpdate")
+
         }
     }
 
@@ -422,56 +398,58 @@ class PlaybackManagerImplX(
                 return
             }
             val playerItemUri = thisWrapper.currentItemId()
-            println("x")
+
             val stateItemUri = songIdToUri(currentPlaybackState.currentMediaItemId)
             if (stateItemUri != playerItemUri) {
                 thisWrapper.setMediaItemUriAndPrepare(
                     uri = stateItemUri,
                     onPrepared = {
-                        thisWrapper.setVolumeGraduallyTo(
-                            startingVolume = 0f,
-                            to = 1f,
-                            fadeDuration = playbackParamsState.playFadeInDurationMillis
-                        )
-
-                        println("7StartUpdate")
-                        val state = playbackStateX.value
-                        if (state is PlaybackStateX.OnGoing)
-                            playbackStateX.value = state.copy(
-                                timeline = PlaybackTimeline.Prepared(
-                                    currentMillis = 0,
-                                    totalMills = thisWrapper.getContentDuration()
-                                )
+                        scope.launch {
+                            thisWrapper.setVolumeGraduallyTo(
+                                startingVolume = 0f,
+                                to = 1f,
+                                fadeDuration = PreferenceManager.Playback.playFadeInDurationMillis.value
                             )
 
-                        println("7EndUpdate")
-                        thisWrapper.play()
-                        if (isStarted) onEvents(
-                            PlaybackEvents.PlayingSongChanged,
-                            playbackStateX.value
-                        )
 
-                        if (isStarted) onEvents(
-                            PlaybackEvents.PlayingPositionChanged,
-                            playbackStateX.value
-                        )
+                            val state = playbackStateX.value
+                            if (state is PlaybackStateX.OnGoing)
+                                playbackStateX.value = state.copy(
+                                    timeline = PlaybackTimeline.Prepared(
+                                        currentMillis = 0,
+                                        totalMills = thisWrapper.getContentDuration()
+                                    )
+                                )
+
+
+                            thisWrapper.play()
+                            if (isStarted) onEvents(
+                                PlaybackEvents.PlayingSongChanged,
+                                playbackStateX.value
+                            )
+
+                            if (isStarted) onEvents(
+                                PlaybackEvents.PlayingPositionChanged,
+                                playbackStateX.value
+                            )
+                        }
                     })
             } else if (!thisWrapper.isPlaying()) {
                 thisWrapper.setVolumeGraduallyTo(
                     startingVolume = 0f,
                     to = 1f,
-                    fadeDuration = playbackParamsState.playFadeInDurationMillis,
+                    fadeDuration = PreferenceManager.Playback.playFadeInDurationMillis.value,
                 )
                 thisWrapper.play()
             }
 
-            println("8StartUpdate")
+
             playbackStateX.value = currentPlaybackState.copy(isPlaying = true)
 
-            println("8EndUpdate")
+
             if (isStarted) onEvents(PlaybackEvents.ResumePlaying, playbackStateX.value)
         } catch (e: Throwable) {
-            println(e)
+
         }
     }
 
@@ -481,14 +459,14 @@ class PlaybackManagerImplX(
         if (currentPlaybackState is PlaybackStateX.OnGoing) {
             thisWrapper.setVolumeGraduallyTo(
                 to = 0f,
-                fadeDuration = playbackParamsState.pauseFadeOutDurationMillis,
+                fadeDuration = PreferenceManager.Playback.pauseFadeOutDurationMillis.value,
                 onFadeComplete = { thisWrapper.pause() }
             )
 
-            println("9StartUpdate")
+
             playbackStateX.value = currentPlaybackState.copy(isPlaying = false)
 
-            println("9EndUpdate")
+
             if (isStarted) onEvents(PlaybackEvents.PausePlaying, playbackStateX.value)
         }
     }
@@ -499,15 +477,15 @@ class PlaybackManagerImplX(
         if (currentPlaybackState is PlaybackStateX.OnGoing) {
             thisWrapper.setVolumeGraduallyTo(
                 to = 0f,
-                fadeDuration = playbackParamsState.pauseFadeOutDurationMillis,
+                fadeDuration = PreferenceManager.Playback.pauseFadeOutDurationMillis.value,
                 onFadeComplete = { thisWrapper.pause() }
             )
         }
 
-        println("10StartUpdate")
+
         playbackStateX.value = PlaybackStateX.Empty
 
-        println("10EndUpdate")
+
         if (isStarted) onEvents(PlaybackEvents.PlaybackCleared, playbackStateX.value)
     }
 
@@ -522,10 +500,11 @@ class PlaybackManagerImplX(
 
             //Start from scratch case
             currentQueueState == PlaybackStateX.Empty -> {
-                val firstItemIndex = if (playbackParamsState.shuffleModeOn) items.indices.random()
-                else 0
+                val firstItemIndex =
+                    if (PreferenceManager.Playback.isShuffleOn.value) items.indices.random()
+                    else 0
 
-                println("11StartUpdate")
+
                 playbackStateX.value = PlaybackStateX.OnGoing(
                     isPlaying = false,
                     queue = items,
@@ -533,45 +512,45 @@ class PlaybackManagerImplX(
                     timeline = PlaybackTimeline.Unprepared
                 )
 
-                println("11EndUpdate")
+
                 if (isStarted) onEvents(PlaybackEvents.PlayingSongChanged, playbackStateX.value)
             }
 
             //append items to end of queue
             atIndex == null && currentQueueState is PlaybackStateX.OnGoing -> {
 
-                println("12StartUpdate")
+
                 playbackStateX.value = currentQueueState.copy(
                     queue = currentQueueState.queue + items
                 )
 
-                println("12EndUpdate")
+
             }
 
             //append in between the queue might disturb current playing item
             atIndex != null && currentQueueState is PlaybackStateX.OnGoing -> {
                 if (atIndex >= currentQueueState.queue.size) {
 
-                    println("13StartUpdate")
+
                     playbackStateX.value = currentQueueState.copy(
                         queue = currentQueueState.queue + items
                     )
 
-                    println("13EndUpdate")
+
                 } else if (atIndex > currentQueueState.currentItemIndex) {
 
-                    println("14StartUpdate")
+
                     playbackStateX.value = currentQueueState.copy(
                         //O(n) copy
                         queue = currentQueueState.queue.toMutableList().apply {
                             addAll(atIndex, items)
                         })
 
-                    println("14EndUpdate")
+
                 } else {
                     val coercedAtIndex = atIndex.coerceAtLeast(0)
 
-                    println("15StartUpdate")
+
                     playbackStateX.value = currentQueueState.copy(
                         //O(n) copy
                         queue = currentQueueState.queue.toMutableList().apply {
@@ -579,7 +558,7 @@ class PlaybackManagerImplX(
                         }, currentItemIndex = currentQueueState.currentItemIndex + items.size
                     )
 
-                    println("15EndtUpdate")
+
                 }
             }
 

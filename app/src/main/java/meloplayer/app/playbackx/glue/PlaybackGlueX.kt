@@ -6,11 +6,9 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.update
 import meloplayer.app.playbackx.PlaybackManagerImplX
 import meloplayer.app.playbackx.PlaybackManagerX
 import meloplayer.app.playbackx.PlaybackStateX
@@ -35,9 +33,7 @@ class PlaybackGlue(private val context: Context = applicationContextGlobal) {
 
     val playbackManagerX: PlaybackManagerX = PlaybackManagerImplX(
         context = context,
-        onEvents = { event, state ->
-            println("Received event $event $state")
-        },
+        onEvents = { _, _ -> },
     )
     private val sessionManager by lazy {
         NotificationSessionManager.getImpl(
@@ -52,25 +48,29 @@ class PlaybackGlue(private val context: Context = applicationContextGlobal) {
         playbackManagerX.startWithRestore(coroutineScope)
         sessionManager.start()
 
-        val shuffleMode = PreferenceManager.isShuffleOn.observableValue.apply {
-            onStart { emit(PreferenceManager.isShuffleOn.value) }
+        val shuffleMode = PreferenceManager.Playback.isShuffleOn.observableValue.apply {
+            onStart { emit(PreferenceManager.Playback.isShuffleOn.value) }
         }
-        val loopMode = PreferenceManager.loopMode.observableValue.apply {
-            onStart { emit(PreferenceManager.loopMode.value) }
+        val loopMode = PreferenceManager.Playback.loopMode.observableValue.apply {
+            onStart { emit(PreferenceManager.Playback.loopMode.value) }
         }
-        playbackManagerX.playbackStateX
-            .onEach { state ->
-                if (state is PlaybackStateX.OnGoing) {
-                    println("Updating session with state:$state")
-                    sessionManager.update(
-                        isPlaying = state.isPlaying,
-                        position = state.timeline,
-                        currentSong = state.currentMediaItemId
-                    )
-                } else {
-                    sessionManager.cancel()
-                }
+        combine(
+            playbackManagerX.playbackStateX,
+            shuffleMode,
+            loopMode
+        ) { state, shuffleVal, loopModeVal ->
+            if (state is PlaybackStateX.OnGoing) {
+                sessionManager.update(
+                    isPlaying = state.isPlaying,
+                    position = state.timeline,
+                    currentSong = state.currentMediaItemId,
+                    isShuffleOn = shuffleVal,
+                    loopMode = loopModeVal
+                )
+            } else {
+                sessionManager.cancel()
             }
+        }
             .launchIn(scope = coroutineScope)
     }
 

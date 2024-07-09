@@ -117,20 +117,19 @@ fun SongListScreen(
     val onSongClick = { song: MediaStoreSong ->
         if (!songs.isNullOrEmpty()) {
             if(PlaybackGlue.instance.playbackManagerX.playbackStateX.value is PlaybackStateX.Empty) {
-
-
                 PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.AddItemsToQueue(
                     items = songsDir.map { it.id }
                 ))
-                PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.SetCurrentQueueItemIndex(
-                    index = songsDir.indexOfFirst { it.id == song.id }
-                ))
-                PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.Play)
             } else {
                 PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.AddItemsToQueue(
                     items = listOf(song.id)
                 ))
             }
+
+            PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.SetCurrentQueueItemIndex(
+                index = songsDir.indexOfFirst { it.id == song.id }
+            ))
+            PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.Play)
 
             //playbackManager?.startPlayingWithQueueInit(songsDir.map { it.id })
         }

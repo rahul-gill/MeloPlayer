@@ -23,22 +23,6 @@ sealed class PlaybackStateX {
     }
 }
 
-data class PlaybackParamsState(
-    val speed: Float = 1f,
-    val pitch: Float = 1f,
-    val shuffleModeOn: Boolean = true,
-    val repeatMode: RepeatMode = RepeatMode.All,
-    val pauseFadeOutDurationMillis: Long = 1000,
-    val playFadeInDurationMillis: Long = 1000,
-    val songTransitionType: SongTransitionType = SongTransitionType.CrossFade(
-        fadeInDurationMillis = 1000,
-        fadeOutDurationMillis = 1000
-    ),
-    val shouldPauseOnZeroVolume: Boolean = false,
-    val shouldResumeOnExternalDeviceConnect: Boolean = false,
-    val shouldGoToPreviousSongOnExternalDeviceAction: Boolean = false,
-    val durationToSkipPreviousSongMillis: Long = 4000
-)
 
 
 sealed class PlaybackCommand {
@@ -118,7 +102,6 @@ data class SleepTimer(
 
 
 interface PlaybackManagerX {
-    val playbackParamsState: PlaybackParamsState
     val playbackStateX: StateFlow<PlaybackStateX>
 
     fun handleCommand(command: PlaybackCommand)

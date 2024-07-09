@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import meloplayer.app.R
 import meloplayer.app.playbackx.PlaybackCommand
 import meloplayer.app.playbackx.PlaybackTimeline
+import meloplayer.app.playbackx.RepeatMode
 import meloplayer.app.playbackx.service.MediaSessionCallbackX
 import meloplayer.app.playbackx.service.PlaybackServiceX
 import meloplayer.app.playbackx.service.RadioNotificationServiceEvents
@@ -39,7 +40,9 @@ interface NotificationSessionManager {
     suspend fun update(
         currentSong: Long,
         isPlaying: Boolean,
-        position: PlaybackTimeline
+        position: PlaybackTimeline,
+        isShuffleOn: Boolean,
+        loopMode: RepeatMode
     )
 
     companion object {
@@ -85,7 +88,7 @@ private class NotificationSessionManagerImpl(
                                 commandHandler(PlaybackCommand.SwitchPlaying)
                             }
 
-                            MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH -> PreferenceManager.isShuffleOn.run {
+                            MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH -> PreferenceManager.Playback.isShuffleOn.run {
                                 setValue(!value)
                             }
 
@@ -97,7 +100,7 @@ private class NotificationSessionManagerImpl(
                                 PlaybackCommand.SkipPrevious
                             )
 
-                            MediaSessionAction.ACTION_LOOP_MODE_SWITCH -> PreferenceManager.loopMode.run {
+                            MediaSessionAction.ACTION_LOOP_MODE_SWITCH -> PreferenceManager.Playback.loopMode.run {
                                 setValue(value.nextInShuffle())
                             }
 
@@ -166,13 +169,17 @@ private class NotificationSessionManagerImpl(
     override suspend fun update(
         currentSong: Long,
         isPlaying: Boolean,
-        position: PlaybackTimeline
+        position: PlaybackTimeline,
+        isShuffleOn: Boolean,
+        loopMode: RepeatMode
     ) {
         val req = buildUpdateRequest(
             mediaSession,
             currentSong,
             isPlaying,
-            position
+            position,
+            isShuffleOn,
+            loopMode
         ) ?: return
         lastNotification = NotificationSessionUtils.buildNotification(
             context,
@@ -219,7 +226,9 @@ private class NotificationSessionManagerImpl(
         mediaSession: MediaSessionCompat,
         songId: Long,
         isPlaying: Boolean,
-        playbackPosition: PlaybackTimeline
+        playbackPosition: PlaybackTimeline,
+        shuffleMode: Boolean,
+        repeatMode: RepeatMode
     ): RadioSessionUpdateRequest? {
         val song = SongsRepository.instance.songById(songId).getOrNull() ?: return null
         val artworkUri = MediaStoreUtils.getArtworkUriForSong(song.id)
@@ -239,8 +248,8 @@ private class NotificationSessionManagerImpl(
             artworkBitmap = artworkBitmap,
             playbackPosition = playbackPosition,
             isPlaying = isPlaying,
-            isShuffleOn = PreferenceManager.isShuffleOn.value,
-            loopMode = PreferenceManager.loopMode.value
+            isShuffleOn = shuffleMode,
+            loopMode = repeatMode
         )
 
     }
