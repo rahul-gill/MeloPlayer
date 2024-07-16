@@ -32,7 +32,7 @@ import meloplayer.core.ui.components.nowplaying.PlayerSheetScaffoldDefaults
 
 @Composable
 fun NowPlayingPanel(
-    playItem: (Long) -> Unit,
+    playItem: (index: Int) -> Unit,
     playingQueueAlbumArtUris: List<Long>,
     currentItemIndex: Int?,
     currentPlaybackProgress: Float,

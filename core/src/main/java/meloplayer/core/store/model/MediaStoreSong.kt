@@ -2,7 +2,7 @@ package meloplayer.core.store.model
 
 import java.time.LocalDate
 
-class MediaStoreSong(
+class MediaStoreSong constructor(
     val id: Long,
     val title: String,
     val trackNumber: Int,

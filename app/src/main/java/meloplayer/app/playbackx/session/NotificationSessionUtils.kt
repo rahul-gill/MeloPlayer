@@ -20,6 +20,7 @@ object NotificationSessionUtils {
         mediaSession: MediaSessionCompat,
         req: RadioSessionUpdateRequest,
     ) {
+        println("updateMediaSessionDetails(req=$req)")
         mediaSession.run {
             setMetadata(
                 MediaMetadataCompat.Builder().run {
@@ -69,12 +70,13 @@ object NotificationSessionUtils {
                                 or PlaybackStateCompat.ACTION_PLAY_PAUSE
                                 or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
                                 or PlaybackStateCompat.ACTION_SKIP_TO_NEXT
+                                or PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE
+                                or PlaybackStateCompat.ACTION_SET_REPEAT_MODE
                                 or PlaybackStateCompat.ACTION_STOP
                                 or PlaybackStateCompat.ACTION_REWIND
                                 or PlaybackStateCompat.ACTION_FAST_FORWARD
                                 or PlaybackStateCompat.ACTION_SEEK_TO
-                                or PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE
-                                or PlaybackStateCompat.ACTION_SET_REPEAT_MODE
+
                     )
                     build()
                 }
@@ -88,6 +90,7 @@ object NotificationSessionUtils {
         mediaSession: MediaSessionCompat,
         req: RadioSessionUpdateRequest
     ): Notification {
+        println("buildNotification(req=$req)")
         val notification = NotificationCompat.Builder(
             context,
             CHANNEL_ID
@@ -177,7 +180,8 @@ object NotificationSessionUtils {
             setStyle(
                 androidx.media.app.NotificationCompat.MediaStyle()
                     .setMediaSession(mediaSession.sessionToken)
-                    .setShowActionsInCompactView(0, 1, 2)
+                    //.setShowActionsInCompactView(0, 1, 2)
+
             )
         }.build()
         return notification

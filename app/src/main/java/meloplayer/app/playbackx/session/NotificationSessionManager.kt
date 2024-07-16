@@ -73,7 +73,7 @@ private class NotificationSessionManagerImpl(
     )
 
     private var lastNotification: Notification? = null
-    private var state = State.DESTROYED
+        private var state = State.DESTROYED
     private val service: PlaybackServiceX? get() = PlaybackServiceX.instance
     private val hasService: Boolean get() = state == State.READY && service != null
 
@@ -181,7 +181,8 @@ private class NotificationSessionManagerImpl(
             isShuffleOn,
             loopMode
         ) ?: return
-        lastNotification = NotificationSessionUtils.buildNotification(
+        if(lastNotification == null)
+            lastNotification = NotificationSessionUtils.buildNotification(
             context,
             mediaSession,
             req

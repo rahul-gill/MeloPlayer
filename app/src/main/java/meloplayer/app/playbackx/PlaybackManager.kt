@@ -20,6 +20,9 @@ sealed class PlaybackStateX {
     ) : PlaybackStateX() {
         val currentMediaItemId
             get() = queue[currentItemIndex]
+        fun currentMediaItemDetails(){
+
+        }
     }
 }
 

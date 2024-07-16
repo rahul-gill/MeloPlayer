@@ -16,6 +16,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import meloplayer.app.playbackx.glue.PlaybackGlue
 import meloplayer.app.playbackx.service.PlaybackServiceX
 import meloplayer.app.prefs.PreferenceManager
+import meloplayer.app.ui.RootScreen
 import meloplayer.app.ui.screen.SongListScreen
 import meloplayer.core.ui.AppTheme
 import meloplayer.core.ui.ColorSchemeType
@@ -57,8 +58,7 @@ class MainActivity : ComponentActivity() {
                         .fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    //RootScreen()
-                    SongListScreen()
+                    RootScreen()
                 }
             }
         }

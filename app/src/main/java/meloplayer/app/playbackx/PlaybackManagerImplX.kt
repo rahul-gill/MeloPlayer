@@ -14,8 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import meloplayer.app.prefs.PreferenceManager
-import java.util.ArrayDeque
-import java.util.Queue
+import java.util.Stack
 
 class PlaybackManagerImplX(
     private val context: Context
@@ -28,7 +27,7 @@ class PlaybackManagerImplX(
     private var scope =
         CoroutineScope(SupervisorJob() + handler.asCoroutineDispatcher("PlaybackThreadDispatcher"))
     private lateinit var playerWrapper: MediaPlayerX
-    private val randomNextIndexesHistory: Queue<Int> = ArrayDeque()
+    private val randomNextIndexesHistory: Stack<Int> = Stack()
     override var playbackStateX = MutableStateFlow<PlaybackStateX>(PlaybackStateX.Empty)
     private var isStarted = false
 
@@ -39,6 +38,9 @@ class PlaybackManagerImplX(
             CoroutineScope(SupervisorJob() + handler.asCoroutineDispatcher("PlaybackThreadDispatcher"))
         scope.launch {
             run {
+                if (::playerWrapper.isInitialized) {
+                    playerWrapper.release()
+                }
                 isStarted = true
                 withContext(Dispatchers.Main) {
                     playerWrapper = MediaPlayerX.build(context = context, onAboutToEnd = {
@@ -47,10 +49,6 @@ class PlaybackManagerImplX(
                         }
                     })
                 }
-//        if (::scope.isInitialized && scope.isActive) {
-//            scope.cancel()
-//        }
-//        scope = parentScope + SupervisorJob(parentScope.coroutineContext.job) + Dispatchers.Main
                 //TODO: restore queue list, queue current item index, playback position millis
             }
         }
@@ -164,7 +162,7 @@ class PlaybackManagerImplX(
             } else {
                 val songToPlayIndex = when {
                     PreferenceManager.Playback.isShuffleOn.value && randomNextIndexesHistory.isNotEmpty() -> {
-                        randomNextIndexesHistory.poll()!!
+                        randomNextIndexesHistory.pop()
                     }
 
                     currentPlayback.currentItemIndex > 0 -> {
@@ -177,6 +175,11 @@ class PlaybackManagerImplX(
 
                     else -> 0
                 }
+                this.playbackStateX.value = currentPlayback.copy(
+                    isPlaying = true,
+                    currentItemIndex = songToPlayIndex,
+                    timeline = PlaybackTimeline.Unprepared
+                )
                 transitionToSongId(currentPlayback.queue[songToPlayIndex])
             }
         }

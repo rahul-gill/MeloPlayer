@@ -35,19 +35,18 @@ import meloplayer.core.ui.components.nowplaying.applyTransitionStyle
 @OptIn(ExperimentalFoundationApi::class)
 fun NowPlayingAlbumArtCard(
     currentItemIndex: Int,
-    playItem: (Long) -> Unit,
+    playItem: (index: Int) -> Unit,
     playingQueue: List<Long>,
     modifier: Modifier = Modifier,
-    nowPlayingAlbumArtStyle: NowPlayingAlbumArtStyle = NowPlayingAlbumArtStyle.Circular,
-    transitionStyle: NowPlayingAlbumArtTransitionStyle = NowPlayingAlbumArtTransitionStyle.Fade
+        nowPlayingAlbumArtStyle: NowPlayingAlbumArtStyle = NowPlayingAlbumArtStyle.Circular,
+        transitionStyle: NowPlayingAlbumArtTransitionStyle = NowPlayingAlbumArtTransitionStyle.Fade
 ) {
     val pagerState =
         rememberPagerState(pageCount = { playingQueue.size }, initialPage = currentItemIndex)
 
     LaunchedEffect(pagerState.currentPage) {
-        val item = playingQueue.getOrNull(pagerState.currentPage)
-        if (pagerState.currentPage != currentItemIndex &&  item != null) {
-            playItem(item)
+        if (pagerState.currentPage != currentItemIndex &&  pagerState.currentPage < playingQueue.size) {
+            playItem(pagerState.currentPage)
         }
     }
 
