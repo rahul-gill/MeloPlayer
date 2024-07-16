@@ -31,6 +31,48 @@
 ~
 - going minimal / fancy options
 - Automatic playlist creation based on selectable criteria
+
+
+## HAHA
+# Feats
+- Embedded lyrics support + way to download lyrics from services
+- Automatic playlist creation based on selectable criteria
+- Fade between songs to make it more pleasant to listen to
+- Advanced equalizer and gain
+-
+
+
+# In case of gstreamer
+Basic operations
+- seekbar show and change position
+- showong song metadata
+- play pause
+- playback speed pitch
+- equalizer device + custom
+- 10 seconds go ahead, go back
+
+Queue operations
+- basic insert, delete, update position of songs etc. operations
+- shuffle, repeat mode
+- next previousM
+- showing initial queue + later added additonally songs like spotify
+- blacklist whitelist operations
+
+Other more involved operations
+- sleep mode
+- fade thing: cross fade when changing songs, fade when playing and pausing
+- handling android focus
+- gapless playback
+- play/pause on headphone/bluetooth connect/disconnect
+- replay gain
+- pause on zero volume
+- different behavior of back button with headphone/bluetooth
+
+Other not so involved
+- ab repeat
+- jump to time
+
+
 - Like songs
 - what is Scrobbling
 - widgets and all
