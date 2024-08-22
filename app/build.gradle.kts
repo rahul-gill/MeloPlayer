@@ -2,6 +2,16 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.sqldelight)
+}
+
+
+sqldelight {
+    databases {
+        create("MeloDatabase") {
+            packageName.set("meloplayer.app.db")
+        }
+    }
 }
 
 android {
@@ -68,6 +78,8 @@ dependencies {
     implementation(libs.sticky.head.grid)
     implementation(libs.androidx.media)
 
+    implementation(libs.sqldelight.driver)
+    implementation(libs.taglib)
 
     debugImplementation(files("libs/lib-decoder-ffmpeg-debug.aar"))
     releaseImplementation(files("libs/lib-decoder-ffmpeg-release.aar"))

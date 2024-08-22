@@ -94,7 +94,7 @@ private val monthFormatter by lazy {
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SongListScreen(
 ) {

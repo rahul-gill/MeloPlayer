@@ -1,22 +1,44 @@
 package meloplayer.app.ui
 
+import android.widget.Space
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.ArtTrack
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.LineStyle
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PersonalInjury
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastDistinctBy
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import dev.olshevski.navigation.reimagined.AnimatedNavHost
 import dev.olshevski.navigation.reimagined.NavAction
 import dev.olshevski.navigation.reimagined.NavBackHandler
@@ -25,6 +47,8 @@ import dev.olshevski.navigation.reimagined.navigate
 import dev.olshevski.navigation.reimagined.rememberNavController
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import meloplayer.app.db
+import meloplayer.app.db.ArtistListWithAlbums
 import meloplayer.app.playbackx.PlaybackCommand
 import meloplayer.app.playbackx.PlaybackStateX
 import meloplayer.app.playbackx.PlaybackTimeline
@@ -131,7 +155,7 @@ fun RootScreen(
                                 TabScreen.ForYou -> Icons.Default.PersonalInjury
                                 TabScreen.Songs -> Icons.Default.MusicNote
                                 TabScreen.Albums -> Icons.Default.Album
-                                TabScreen.Artists -> Icons.Default.ArtTrack
+                                TabScreen.Artists -> Icons.Default.Hub
                                 TabScreen.Folders -> Icons.Default.Folder
                                 TabScreen.Playlist -> Icons.Default.LineStyle
                             }, contentDescription = null
@@ -157,7 +181,36 @@ fun RootScreen(
 
             when (tab) {
                 TabScreen.ForYou -> {
-
+                    val songsNew = remember {
+                        db.schemaQueries.songsList().executeAsList()
+                            .sortedBy { it.song_title }
+                            .groupBy { it.song_id }
+                    }.toList()
+                    LazyColumn {
+                        items(songsNew){ songHybridItem ->
+                            Card(Modifier.padding(8.dp)) {
+                                Column(Modifier.padding(8.dp)) {
+                                    Row(Modifier.padding(end = 8.dp)) {
+                                        AsyncImage(
+                                            songHybridItem.second.first().cover_image_uri,
+                                            null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .height(52.dp)
+                                                .aspectRatio(1f)
+                                                .clip(RoundedCornerShape(12))
+                                        )
+                                    }
+                                    Column {
+                                        Text(text = "Song name: ${songHybridItem.second.first().song_title}")
+                                        Text(text = "Album name: ${songHybridItem.second.first().album_name}")
+                                        Text(text = "Artist name: ${songHybridItem.second.map { it.artist_name }.distinct()}")
+                                        Text(text = "Genre name: ${songHybridItem.second.map { it.genre_name }.distinct()}")
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 TabScreen.Songs -> {
@@ -171,7 +224,39 @@ fun RootScreen(
                 }
 
                 TabScreen.Artists -> {
-                    ArtistListScreen()
+                    val withSongs = remember {
+                        db.schemaQueries.artistListWithSongs().executeAsList()
+                            .sortedBy { it.artist }
+                            .fastDistinctBy { it.song }
+                            .groupBy { it.artist }
+
+                    }.toList()
+                    val withAlbums = remember {
+                        db.schemaQueries.artistListWithAlbums().executeAsList()
+                            .sortedBy { it.artist_name }
+                            .fastDistinctBy { it.album_name }
+                            .groupBy { it.artist_name }
+                    }
+                    LazyColumn {
+                        items(withSongs){ songHybridItem ->
+                            Card(Modifier.padding(8.dp)) {
+                                Text(text = songHybridItem.first, style = MaterialTheme.typography.titleLarge)
+                                Row(Modifier.padding(8.dp)) {
+                                    Column(Modifier.weight(1f)) {
+                                        songHybridItem.second.forEachIndexed { index, item ->
+                                            Text(text = "${index + 1} ${item.song}")
+                                        }
+                                    }
+                                    Spacer(Modifier.width(8.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        withAlbums.getOrDefault(songHybridItem.first, listOf()).forEachIndexed { index, item ->
+                                            Text(text = "${index+1} ${item.album_name}")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 TabScreen.Folders -> {}

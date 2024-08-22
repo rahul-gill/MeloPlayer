@@ -21,6 +21,8 @@ color-picker = "1.0.7"
 adaptive = "1.0.0-beta03"
 coroutines = "1.9.0-RC"
 media = "1.7.0"
+taglib = "1.4"
+sqldelight = "2.0.2"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
@@ -57,9 +59,12 @@ navigation-reimagined = { module = "dev.olshevski.navigation:reimagined", versio
 
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
+sqldelight-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
+taglib = { module = "com.github.timusus:KTagLib", version.ref = "taglib" }
+
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 jetbrainsKotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-
+sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }

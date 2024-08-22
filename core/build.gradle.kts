@@ -78,6 +78,7 @@ implementation(libs.androidx.compose.icons.extended)
 
     api(libs.androidx.media3.exoplayer)
 
+    implementation("com.github.thelumiereguy:CrashWatcher-Android:2.0.2")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

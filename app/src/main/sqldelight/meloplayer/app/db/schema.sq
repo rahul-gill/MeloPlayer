@@ -1,0 +1,169 @@
+import java.time.Instant;
+import kotlin.Boolean;
+
+CREATE TABLE albums (
+    album_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    release_date INTEGER AS Instant,
+    cover_image_uri TEXT
+);
+
+CREATE TABLE songs (
+    song_id INTEGER PRIMARY KEY,--media store id
+    title TEXT NOT NULL,
+    file_system_path TEXT NOT NULL,
+    length_ms INTEGER NOT NULL ,
+    bit_rate_kbps INTEGER NOT NULL ,
+    sample_rate_hz INTEGER  NOT NULL ,
+    channels_count INTEGER NOT NULL ,
+    cover_image_uri TEXT,
+    track_number INTEGER,
+    cd_number INTEGER,
+    album_id INTEGER,
+    subtitle TEXT,
+    FOREIGN KEY (album_id) REFERENCES albums(album_id)
+);
+
+CREATE TABLE artists (
+    artist_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    is_song_artist INTEGER AS Boolean NOT NULL ,
+    is_album_artist INTEGER AS Boolean NOT NULL,
+    bio TEXT,
+    image_uri TEXT
+);
+
+CREATE TABLE genres (
+    genre_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    image_uri TEXT
+);
+
+
+CREATE TABLE song_artists (
+    song_id INTEGER,
+    artist_id INTEGER,
+    PRIMARY KEY (song_id, artist_id),
+    FOREIGN KEY (song_id) REFERENCES songs(song_id),
+    FOREIGN KEY (artist_id) REFERENCES artists(artist_id)
+);
+
+
+CREATE TABLE song_genres (
+    song_id INTEGER,
+    genre_id INTEGER,
+    PRIMARY KEY (song_id, genre_id),
+    FOREIGN KEY (song_id) REFERENCES songs(song_id),
+    FOREIGN KEY (genre_id) REFERENCES genres(genre_id)
+);
+
+
+-- ###################### Sync Ops: When some records are deleted #######################################
+
+--deleting songs
+findDeletedSongs:
+SELECT song_id FROM songs WHERE song_id NOT IN :all_song_ids_existing;
+
+deleteRecordsForDeletedSongs1:
+DELETE FROM song_artists WHERE song_id IN :deleted_songs_ids;
+
+deleteRecordsForDeletedSongs2:
+DELETE FROM song_genres WHERE song_id IN :deleted_songs_ids;
+
+deleteRecordsForDeletedSongs3:
+DELETE FROM songs WHERE song_id IN :deleted_songs_ids;
+
+--deleting orphan records after deleting songs
+deleteOrphanedRecords1:
+DELETE FROM genres WHERE genres.genre_id NOT IN (
+    SELECT song_genres.genre_id FROM song_genres
+);
+
+deleteOrphanedRecords2:
+DELETE FROM artists WHERE artists.artist_id NOT IN (
+    SELECT song_artists.artist_id FROM song_artists
+);
+
+deleteOrphanedRecords3:
+DELETE FROM albums WHERE albums.album_id NOT IN (
+    SELECT songs.album_id FROM songs
+);
+
+-- ###################### Sync Ops: When some records are inserted/updated #######################################
+albumExistsWithName:
+SELECT album_id FROM albums WHERE title = ?;
+insertAlbum:
+INSERT INTO albums (title, release_date, cover_image_uri)
+VALUES (?, ?, ?);
+updateAlbum:
+UPDATE albums
+SET title = :title,
+    release_date = :release_date,
+    cover_image_uri = :cover_image_uri
+WHERE album_id = ?;
+
+insertOrReplaceSong:
+INSERT OR REPLACE INTO songs
+(song_id, title, file_system_path, cover_image_uri, track_number, cd_number, album_id, bit_rate_kbps, sample_rate_hz, length_ms, channels_count, subtitle)
+VALUES (?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+artistExistsWithName:
+SELECT artist_id FROM artists WHERE name = ?;
+insertArtist:
+INSERT INTO artists (name, bio, image_uri, is_song_artist, is_album_artist)
+VALUES ( ?, ?, ?, ?, ?);
+updateArtist:
+UPDATE artists
+SET name = :name,
+    bio = :bio,
+    image_uri  = :image_uri
+WHERE artist_id = ?;
+setArtistIsSongArtist:
+UPDATE artists
+SET is_song_artist = ?
+WHERE artist_id = ?;
+setArtistIsAlbumArtist:
+UPDATE artists
+SET is_album_artist = ?
+WHERE artist_id = ?;
+
+genreExistsWithName:
+SELECT genre_id FROM genres WHERE name = ?;
+insertGenre:
+INSERT INTO genres (name, image_uri)
+VALUES (  ?, ?);
+updateGenre:
+UPDATE genres
+SET name = :name,
+    image_uri  = :image_uri
+WHERE genre_id = ?;
+
+insertOrIgnoreInSongArtist:
+INSERT OR IGNORE INTO song_artists(song_id, artist_id) VALUES (?, ?);
+
+insertOrIgnoreInSongGenre:
+INSERT OR IGNORE INTO song_genres(song_id, genre_id) VALUES (?, ?);
+
+lastInsertRowId:
+SELECT last_insert_rowid();
+
+
+-- ###################### Query Ops: Listing records #######################################
+songsList:
+SELECT songs.song_id,  songs.title AS song_title, songs.cover_image_uri, artists.name AS artist_name, albums.title AS album_name, genres.name AS genre_name
+FROM songs, song_artists, song_genres, artists, genres, albums
+WHERE songs.song_id = song_artists.song_id
+    AND songs.song_id = song_genres.song_id
+    AND song_artists.artist_id = artists.artist_id
+    AND song_genres.genre_id =  genres.genre_id
+    AND songs.album_id = albums.album_id;
+
+artistListWithSongs:
+SELECT artists.name AS artist, songs.title AS song
+FROM songs, artists, song_artists
+WHERE songs.song_id = song_artists.song_id AND artists.artist_id = song_artists.artist_id;
+
+artistListWithAlbums:
+SELECT artists.name AS artist_name, albums.title AS album_name
+FROM artists, songs, song_artists, albums
+WHERE artists.artist_id = song_artists.artist_id AND song_artists.song_id = songs.song_id AND albums.album_id = songs.album_id;
