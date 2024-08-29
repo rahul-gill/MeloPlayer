@@ -1,8 +1,6 @@
 package meloplayer.app
 
-import android.content.Intent
 import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -19,34 +17,22 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import meloplayer.app.db.Albums
 import meloplayer.app.db.MeloDatabase
+import meloplayer.app.db.Songs
 import meloplayer.app.playbackx.glue.PlaybackGlue
-import meloplayer.app.playbackx.service.PlaybackServiceX
 import meloplayer.app.prefs.PreferenceManager
 import meloplayer.app.store.MediaStoreFetcherUtil.getSongsMediaStoreProperties
 import meloplayer.app.store.MetadataDBPopulate
 import meloplayer.app.ui.RootScreen
-import meloplayer.app.ui.screen.SongListScreen
 import meloplayer.core.startup.applicationContextGlobal
 import meloplayer.core.ui.AppTheme
 import meloplayer.core.ui.ColorSchemeType
+import org.koin.android.ext.android.inject
+import org.koin.compose.koinInject
 import java.time.Instant
 
-
-val db by lazy {
-    MeloDatabase(
-        AndroidSqliteDriver(MeloDatabase.Schema, applicationContextGlobal, "some.db"),
-        albumsAdapter = Albums.Adapter(object : ColumnAdapter<Instant, Long> {
-            override fun decode(databaseValue: Long): Instant {
-                return Instant.ofEpochMilli(databaseValue)
-            }
-            override fun encode(value: Instant): Long {
-                return value.toEpochMilli()
-            }
-        })
-    )
-}
-
 class MainActivity : ComponentActivity() {
+
+    val db by inject<MeloDatabase>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()

@@ -58,7 +58,7 @@ object MetadataDBPopulate {
                             val subtitle = getAttrsOfPropMap(metadata, "SUBTITLE").firstOrNull()?.trim()
 
                             val albumId = if (album != null) {
-                                q.insertAlbum(album, null, /*TODO*/null)
+                                q.insertAlbum(album, null, cover_image_uri = getArtworkUriForSong(songItem.id).toString())
                                 q.lastInsertRowId().executeAsOneOrNull()
                             } else {
                                 null
@@ -77,7 +77,8 @@ object MetadataDBPopulate {
                                 cd_number = diskNumber?.toLongOrNull(),
                                 track_number = trackNumber?.toLongOrNull(),
                                 cover_image_uri = getArtworkUriForSong(songItem.id).toString(),
-                                subtitle = subtitle
+                                subtitle = subtitle,
+                                date_modified = songItem.dateModified
                             )
                             //TODO: fix O(n) queries
                             val artistsExist =

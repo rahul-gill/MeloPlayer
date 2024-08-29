@@ -1,12 +1,9 @@
-package meloplayer.app.ui.screen
+package meloplayer.app.ui.screen.songs
 
-import android.content.ContentUris
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,16 +35,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +51,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.onLongClick
@@ -65,31 +59,30 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.toIntRect
-import androidx.core.net.toUri
-import kotlinx.coroutines.Dispatchers
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import meloplayer.app.R
-import meloplayer.app.playbackx.PlaybackCommand
-import meloplayer.app.playbackx.PlaybackStateX
-import meloplayer.app.playbackx.glue.PlaybackGlue
-import meloplayer.core.store.model.MediaStoreSong
-import meloplayer.core.store.model.SongSortOrder
-import meloplayer.core.store.model.toStringResource
-import meloplayer.core.store.repo.SongsRepository
+import meloplayer.app.store.models.SongListItem
+import meloplayer.app.store.models.SongSortOrder
+import meloplayer.app.store.models.toStringResource
 import meloplayer.core.ui.components.MediaItemGridCard
+import meloplayer.core.ui.components.MediaItemListCard
 import meloplayer.core.ui.components.base.LargeTopAppBar
+import meloplayer.core.ui.components.nowplaying.isLayoutTypeVertical
+import org.koin.androidx.compose.koinViewModel
 import ua.hospes.lazygrid.GridCells
 import ua.hospes.lazygrid.LazyGridState
 import ua.hospes.lazygrid.LazyVerticalGrid
 import ua.hospes.lazygrid.items
 import ua.hospes.lazygrid.rememberLazyGridState
+import java.time.Duration
+import java.time.Instant
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 
-private val monthFormatter by lazy {
+val monthFormatter by lazy {
     DateTimeFormatter.ofPattern("MMMM yyyy")
 }
 
@@ -97,116 +90,27 @@ private val monthFormatter by lazy {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SongListScreen(
+    viewModel: SongListViewModel = koinViewModel()
 ) {
-    var songSortOrder: SongSortOrder by remember {
-        mutableStateOf(SongSortOrder.DateModified())
-    }
-    val scope = rememberCoroutineScope()
-    var songsDir by remember {
-        mutableStateOf<List<MediaStoreSong>>(listOf())
-    }
-    var songs by remember {
-        mutableStateOf<Map<String, List<Pair<Int, MediaStoreSong>>>?>(
-            mapOf()
-        )
-    }
-    val selectedIds = rememberSaveable { mutableStateOf(emptySet<Int>()) }
-    val inSelectionMode by remember { derivedStateOf { selectedIds.value.isNotEmpty() } }
-
-
-    val onSongClick = { song: MediaStoreSong ->
-        if (!songs.isNullOrEmpty()) {
-            if(PlaybackGlue.instance.playbackManagerX.playbackStateX.value is PlaybackStateX.Empty) {
-                PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.AddItemsToQueue(
-                    items = songsDir.map { it.id }
-                ))
-            } else {
-                PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.AddItemsToQueue(
-                    items = listOf(song.id)
-                ))
-            }
-
-            PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.SetCurrentQueueItemIndex(
-                index = songsDir.indexOfFirst { it.id == song.id }
-            ))
-            PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.Play)
-
-            //playbackManager?.startPlayingWithQueueInit(songsDir.map { it.id })
-        }
-        //playbackManager?.playWithId(song.id)
-
-    }
-//    DisposableEffect(key1 = Unit) {
-////        onDispose {
-////            playbackX.release()
-////        }
-//    }
-    LaunchedEffect(key1 = songSortOrder) {
-        withContext(Dispatchers.IO) {
-            val songRes = SongsRepository.instance
-                .songs().getOrNull() ?: listOf()
-            songsDir = songRes
-            withContext(Dispatchers.Main) {
-                val sortKeyGetter = { it: MediaStoreSong ->
-                    when (songSortOrder) {
-                        is SongSortOrder.Name -> it.title.firstOrNull()?.toString() ?: ""
-                        is SongSortOrder.Album -> it.albumName
-                        is SongSortOrder.AlbumArtist -> it.albumArtist ?: ""
-                        is SongSortOrder.Composer -> it.composer ?: ""
-                        is SongSortOrder.DateModified -> it.dateModified.format(monthFormatter)
-                        is SongSortOrder.Duration -> when {
-                            it.duration < 1000_000 -> "Less than a minute"
-                            it.duration in 1000_000..2000_000 -> "1 to 2 minutes"
-                            it.duration in 2000_000..3000_000 -> "2 to 3 minutes"
-                            it.duration in 3000_000..4000_000 -> "3 to 4 minutes"
-                            it.duration in 4000_000..5000_000 -> "4 to 5 minutes"
-                            it.duration in 5000_000..10000_000 -> "5 to 10 minutes"
-                            else -> "More than 10 minutes"
-                        } //TODO: localization
-                        is SongSortOrder.SongArtist -> it.artistNames.firstOrNull() ?: ""
-                        is SongSortOrder.Year -> "${it.year}"
-                    }
-                }
-                songs = songRes
-                    .sortedWith { a, b ->
-                        when {
-                            (songSortOrder is SongSortOrder.Duration) -> {
-                                if (songSortOrder.isAscending) a.duration.compareTo(b.duration)
-                                else b.duration.compareTo(a.duration)
-                            }
-
-                            (songSortOrder is SongSortOrder.DateModified) -> {
-                                if (songSortOrder.isAscending) a.dateModified.compareTo(b.dateModified)
-                                else b.dateModified.compareTo(a.dateModified)
-                            }
-
-                            (songSortOrder is SongSortOrder.Year) -> {
-                                if (songSortOrder.isAscending) a.year.compareTo(b.year)
-                                else b.year.compareTo(a.year)
-                            }
-
-                            else -> {
-                                if (songSortOrder.isAscending) sortKeyGetter(a).compareTo(
-                                    sortKeyGetter(b)
-                                )
-                                else sortKeyGetter(b).compareTo(sortKeyGetter(a))
-                            }
-                        }
-                    }
-                    .mapIndexed { index, mediaStoreSong -> Pair(index, mediaStoreSong) }
-                    .groupBy { sortKeyGetter(it.second) }
-            }
-        }
-    }
-    var sortOrder by remember {
-        mutableStateOf(SongSortOrder.Name(isAscending = true))
-    }
-    val onShuffleSongs = remember {
-        {
+    val onSongClick = { song: SongListItem ->
 //        if (!songs.isNullOrEmpty()) {
-//            playbackManager.startPlayingWithQueueInit(songs?.map { it.id } ?: listOf())
+//            if (PlaybackGlue.instance.playbackManagerX.playbackStateX.value is PlaybackStateX.Empty) {
+//                PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.AddItemsToQueue(
+//                    items = songsDir.map { it.songID }
+//                ))
+//            } else {
+//                PlaybackGlue.instance.playbackManagerX.handleCommand(
+//                    PlaybackCommand.AddItemsToQueue(
+//                        items = listOf(song.songID)
+//                    )
+//                )
+//            }
+//
+//            PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.SetCurrentQueueItemIndex(
+//                index = songsDir.indexOfFirst { it.songID == song.songID }
+//            ))
+//            PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.Play)
 //        }
-        }
     }
 
 
@@ -215,6 +119,28 @@ fun SongListScreen(
     var showOverflowMenu by remember {
         mutableStateOf(false)
     }
+
+    val selectedSongIndexed by viewModel.selectedSongsIndexes.collectAsStateWithLifecycle()
+    val sortOrder by viewModel.songSortOrder.collectAsStateWithLifecycle()
+    val songsList by viewModel.songs.collectAsStateWithLifecycle(initialValue = mapOf())
+
+    var lastTime by remember {
+        mutableStateOf<LocalDateTime?>(null)
+    }
+
+    LaunchedEffect(songsList) {
+        if(lastTime == null){
+            lastTime = LocalDateTime.now()
+            println("Starting at ${DateTimeFormatter.ISO_DATE_TIME.format(lastTime)} songListSize: ${songsList.size}")
+        } else {
+            val now = LocalDateTime.now()
+            println("PrevTime: ${DateTimeFormatter.ISO_DATE_TIME.format(lastTime)}" +
+                    " Now: ${DateTimeFormatter.ISO_DATE_TIME.format(now)}" +
+                    " Duration: ${Duration.between(lastTime, now).toMillis()}ms songListSize: ${songsList.size}")
+            lastTime = now
+        }
+    }
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
@@ -226,12 +152,12 @@ fun SongListScreen(
                 },
                 scrollBehavior = scrollBehavior,
                 selectionInfoContent = {
-                    if (inSelectionMode) {
+                    if (selectedSongIndexed.isNotEmpty()) {
                         TopAppBar(
-                            title = { "${selectedIds.value.size} Selected" },
+                            title = { "${selectedSongIndexed.size} Selected" },
                             navigationIcon = {
                                 IconButton(
-                                    onClick = { selectedIds.value = setOf() }
+                                    onClick = { viewModel.clearSelection() }
                                 ) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -265,16 +191,16 @@ fun SongListScreen(
                     }
                     if (showOverflowMenu) {
                         SongSortOrderSelectSheet(
-                            songSortOrder = songSortOrder,
+                            songSortOrder = sortOrder,
                             onDismiss = { showOverflowMenu = false },
-                            onSelectSongSortOrder = { new -> songSortOrder = new }
+                            onSelectSongSortOrder = viewModel::setSortOrder
                         )
                     }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onShuffleSongs) {
+            FloatingActionButton(onClick = viewModel::onShuffleSongs) {
                 Icon(
                     imageVector = Icons.Default.Shuffle,
                     contentDescription = stringResource(R.string.shuffle_songs_and_play)
@@ -282,54 +208,11 @@ fun SongListScreen(
             }
         }
     ) { innerPadding ->
-        songs?.let { songsNotNull ->
-//            if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT)
-//                LazyColumn(
-//                    modifier = Modifier.padding(innerPadding),
-//                    verticalArrangement = Arrangement.spacedBy(4.dp)
-//
-//                ) {
-//                    songsNotNull.forEach { (header, itemList) ->
-//                        stickyHeader {
-//                            Row(
-//                                modifier = Modifier
-//                                    .fillMaxSize()
-//                                    .background(
-//                                        TopAppBarDefaults.topAppBarColors().scrolledContainerColor//.copy(alpha = 0.8f)
-//                                    )
-//                                    .padding(8.dp)
-//
-//                            ) {
-//                                Text(text = header)
-//                            }
-//                        }
-//                        items(itemList) { song ->
-//                            MediaItemListCard(
-//                                imageModel = ContentUris.withAppendedId(
-//                                    "content://media/external/audio/albumart".toUri(),
-//                                    song.albumId
-//                                ),
-//                                title = song.title,
-//                                subtitle = song.artistNames.joinToString(", "),
-//                                onClick = { onSongClick(song) }
-//                            )
-//                        }
-//                    }
-//                }
-//            else
-            SongsResponsiveGrid(
-
-                modifier = Modifier.padding(innerPadding),
-                selectedIds, songsNotNull, inSelectionMode
-            ) { onSongClick(it) }
-        } ?: Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(text = "Error")
-        }
+        SongsResponsiveGrid(
+            modifier = Modifier.padding(innerPadding),
+            selectedSongIndexed, songsList, selectedSongIndexed.isNotEmpty(), setSelectedIds = viewModel::setSelectedIds,
+            onSongClick = onSongClick
+        )
     }
 }
 
@@ -367,13 +250,6 @@ private fun SongSortOrderSelectSheet(
                                     newSortOrder.isAscending
                                 )
 
-                                is SongSortOrder.AlbumArtist -> choice.copy(
-                                    newSortOrder.isAscending
-                                )
-
-                                is SongSortOrder.Composer -> choice.copy(
-                                    newSortOrder.isAscending
-                                )
 
                                 is SongSortOrder.DateModified -> choice.copy(
                                     newSortOrder.isAscending
@@ -387,13 +263,6 @@ private fun SongSortOrderSelectSheet(
                                     newSortOrder.isAscending
                                 )
 
-                                is SongSortOrder.SongArtist -> choice.copy(
-                                    newSortOrder.isAscending
-                                )
-
-                                is SongSortOrder.Year -> choice.copy(
-                                    newSortOrder.isAscending
-                                )
                             }
                         },
                         role = Role.RadioButton
@@ -421,13 +290,6 @@ private fun SongSortOrderSelectSheet(
                             newIsAscending
                         )
 
-                        is SongSortOrder.AlbumArtist -> choice.copy(
-                            newIsAscending
-                        )
-
-                        is SongSortOrder.Composer -> choice.copy(
-                            newIsAscending
-                        )
 
                         is SongSortOrder.DateModified -> choice.copy(
                             newIsAscending
@@ -441,13 +303,6 @@ private fun SongSortOrderSelectSheet(
                             newIsAscending
                         )
 
-                        is SongSortOrder.SongArtist -> choice.copy(
-                            newIsAscending
-                        )
-
-                        is SongSortOrder.Year -> choice.copy(
-                            newIsAscending
-                        )
                     }
                 }
             SegmentedButton(
@@ -500,10 +355,11 @@ private fun SongSortOrderSelectSheet(
 @OptIn(ExperimentalMaterial3Api::class)
 private fun SongsResponsiveGrid(
     modifier: Modifier = Modifier,
-    selectedIds: MutableState<Set<Int>>,
-    songsNotNull: Map<String, List<Pair<Int, MediaStoreSong>>>,
+    selectedIds: Set<Int>,
+    songsNotNull: Map<String, List<Pair<Int, SongListItem>>>,
     inSelectionMode: Boolean,
-    onSongClick: (MediaStoreSong) -> Unit
+    onSongClick: (SongListItem) -> Unit,
+    setSelectedIds: (Set<Int>) -> Unit
 ) {
     val state = rememberLazyGridState()
     val autoScrollSpeed = remember { mutableFloatStateOf(0f) }
@@ -524,11 +380,12 @@ private fun SongsResponsiveGrid(
                 haptics = LocalHapticFeedback.current,
                 selectedIds = selectedIds,
                 autoScrollSpeed = autoScrollSpeed,
-                autoScrollThreshold = with(LocalDensity.current) { 40.dp.toPx() }
+                autoScrollThreshold = with(LocalDensity.current) { 40.dp.toPx() },
+                setSelectedIds = setSelectedIds
             )
             .then(modifier),
         state = state,
-        columns = GridCells.Fixed(3),
+        columns = GridCells.Fixed(if (isLayoutTypeVertical()) 1 else 6),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -538,7 +395,7 @@ private fun SongsResponsiveGrid(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-                            TopAppBarDefaults.topAppBarColors().scrolledContainerColor//.copy(alpha = 0.8f)
+                            TopAppBarDefaults.topAppBarColors().scrolledContainerColor
                         )
                         .padding(8.dp)
 
@@ -550,35 +407,61 @@ private fun SongsResponsiveGrid(
                 val isSelected = if (!inSelectionMode) {
                     null
                 } else {
-                    selectedIds.value.contains(indexSongPair.first)
+                    selectedIds.contains(indexSongPair.first)
                 }
-                MediaItemGridCard(
-                    modifier = Modifier
-                        .semantics {
-                            if (!inSelectionMode) {
-                                onLongClick("Select") {
-                                    selectedIds.value += indexSongPair.first
-                                    true
+                if (isLayoutTypeVertical()) {
+                    MediaItemListCard(
+                        modifier = Modifier
+                            .semantics {
+                                if (!inSelectionMode) {
+                                    onLongClick("Select") {
+                                        setSelectedIds(selectedIds + indexSongPair.first)
+                                        true
+                                    }
                                 }
+                            },
+                        imageModel = indexSongPair.second.coverImageUri
+                            ?: painterResource(id = R.drawable.app_icon_monochrome),
+                        title = indexSongPair.second.title,
+                        subtitle = (indexSongPair.second.albumName ?: "") + " - " + (indexSongPair.second.artistNames ?: ""),
+                        onClick = {
+                            if (isSelected == null) {
+                                onSongClick(indexSongPair.second)
+                            } else if (!isSelected) {
+                                setSelectedIds(selectedIds + indexSongPair.first)
+                            } else {
+                                setSelectedIds(selectedIds - indexSongPair.first)
                             }
                         },
-                    imageModel = ContentUris.withAppendedId(
-                        "content://media/external/audio/albumart".toUri(),
-                        indexSongPair.second.albumId
-                    ),
-                    title = indexSongPair.second.title,
-                    subtitle = indexSongPair.second.artistNames.joinToString(", "),
-                    onClick = {
-                        if (isSelected == null) {
-                            onSongClick(indexSongPair.second)
-                        } else if (!isSelected) {
-                            selectedIds.value += indexSongPair.first
-                        } else {
-                            selectedIds.value -= indexSongPair.first
-                        }
-                    },
-                    isSelected = isSelected
-                )
+                        isSelected = isSelected
+                    )
+                } else {
+                    MediaItemGridCard(
+                        modifier = Modifier
+                            .semantics {
+                                if (!inSelectionMode) {
+                                    onLongClick("Select") {
+                                        setSelectedIds(selectedIds + indexSongPair.first)
+                                        true
+                                    }
+                                }
+                            },
+                        imageModel = indexSongPair.second.coverImageUri
+                            ?: painterResource(id = R.drawable.app_icon_monochrome),
+                        title = indexSongPair.second.title,
+                        subtitle = (indexSongPair.second.albumName ?: "") + " - " + (indexSongPair.second.artistNames ?: ""),
+                        onClick = {
+                            if (isSelected == null) {
+                                onSongClick(indexSongPair.second)
+                            } else if (!isSelected) {
+                                setSelectedIds(selectedIds + indexSongPair.first)
+                            } else {
+                                setSelectedIds(selectedIds - indexSongPair.first)
+                            }
+                        },
+                        isSelected = isSelected
+                    )
+                }
             }
         }
     }
@@ -588,9 +471,10 @@ private fun SongsResponsiveGrid(
 private fun Modifier.gridSelectionDragHandler(
     lazyGridState: LazyGridState,
     haptics: HapticFeedback,
-    selectedIds: MutableState<Set<Int>>,
+    selectedIds: Set<Int>,
     autoScrollSpeed: MutableState<Float>,
-    autoScrollThreshold: Float
+    autoScrollThreshold: Float,
+    setSelectedIds: (Set<Int>) -> Unit
 ) = pointerInput(Unit) {
     fun LazyGridState.gridItemKeyAtPosition(hitPoint: Offset): Int? =
         layoutInfo.visibleItemsInfo.find { itemInfo ->
@@ -602,11 +486,11 @@ private fun Modifier.gridSelectionDragHandler(
     detectDragGesturesAfterLongPress(
         onDragStart = { offset ->
             lazyGridState.gridItemKeyAtPosition(offset)?.let { key ->
-                if (!selectedIds.value.contains(key)) {
+                if (!selectedIds.contains(key)) {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     initialKey = key
                     currentKey = key
-                    selectedIds.value += key
+                    setSelectedIds(selectedIds + key)
                 }
             }
         },
@@ -625,11 +509,12 @@ private fun Modifier.gridSelectionDragHandler(
 
                 lazyGridState.gridItemKeyAtPosition(change.position)?.let { key ->
                     if (currentKey != key) {
-                        selectedIds.value = selectedIds.value
-                            .minus(initialKey!!..currentKey!!)
-                            .minus(currentKey!!..initialKey!!)
-                            .plus(initialKey!!..key)
-                            .plus(key..initialKey!!)
+                        setSelectedIds(
+                            selectedIds.minus(initialKey!!..currentKey!!)
+                                .minus(currentKey!!..initialKey!!)
+                                .plus(initialKey!!..key)
+                                .plus(key..initialKey!!)
+                        )
                         currentKey = key
                     }
                 }

@@ -1,9 +1,12 @@
 package meloplayer.app.store.models
 
+import java.time.Instant
+
 data class Song(
     val songID: Long,
     val title: String,
     val fileSystemPath: String,
+    val dateModified: Instant,
     val lengthMs: Long,
     val bitRateKbps: Long,
     val sampleRateHz: Long,
@@ -11,8 +14,9 @@ data class Song(
     val coverImageUri: String?,
     val trackNumber: Long?,
     val cdNUmber: Long?,
-    val albumIdName: Pair<Long, String>?,
     val subtitle: String?,
-    val artistNames: List<String>,
-    val genreNames: List<String>
+    val albumIdName: Pair<Long, String>?,
+    val artistIdNames: List<Pair<Long, String>>,
+    val albumArtistIdNames: List<Pair<Long, String>>,
+    val genreIdNames: List<Pair<Long,String>>
 )

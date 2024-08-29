@@ -79,10 +79,17 @@ dependencies {
     implementation(libs.androidx.media)
 
     implementation(libs.sqldelight.driver)
+    implementation(libs.sqldelight.coroutines)
     implementation(libs.taglib)
 
     debugImplementation(files("libs/lib-decoder-ffmpeg-debug.aar"))
     releaseImplementation(files("libs/lib-decoder-ffmpeg-release.aar"))
+
+
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.android)
+    implementation(libs.koin.compose)
+    testImplementation(libs.koin.test)
 
 
     testImplementation(libs.junit)

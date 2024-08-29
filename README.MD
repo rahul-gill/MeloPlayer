@@ -6,7 +6,7 @@
 
 ## TODO/Roadmap
 
-- Build settings screen for basic settings
+- [ ] Build settings screen for basic settings
 - setting basic player panel and all layout
 - Song screen everything(reusable for other lists)
   - Proper headers

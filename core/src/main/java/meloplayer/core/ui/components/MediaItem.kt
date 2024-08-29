@@ -174,6 +174,7 @@ fun MediaItemGridCard(
 
 @Composable
 fun MediaItemListCard(
+    modifier: Modifier = Modifier,
     imageModel: Any,
     title: String,
     subtitle: String,
@@ -187,7 +188,7 @@ fun MediaItemListCard(
     isSelected: Boolean? = null
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().then(modifier),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         onClick = onClick
     ) {

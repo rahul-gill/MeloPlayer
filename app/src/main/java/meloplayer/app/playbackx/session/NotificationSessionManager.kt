@@ -209,7 +209,7 @@ private class NotificationSessionManagerImpl(
             }
         )
 
-        NotificationSessionUtils.updateMediaSessionDetails(mediaSession, req)
+        NotificationSessionUtils.updateMediaSessionDetails(service!!, mediaSession, req)
         runCatching {
             if (
                 ActivityCompat.checkSelfPermission(

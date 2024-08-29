@@ -7,16 +7,19 @@ import android.content.Intent
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import androidx.annotation.DrawableRes
 import androidx.core.app.NotificationCompat
 import meloplayer.app.MainActivity
 import meloplayer.app.R
 import meloplayer.app.playbackx.PlaybackTimeline
 import meloplayer.app.playbackx.RepeatMode
+import meloplayer.app.playbackx.session.NotificationSessionUtils.createAction
 
 object NotificationSessionUtils {
 
 
     fun updateMediaSessionDetails(
+        context: Context,
         mediaSession: MediaSessionCompat,
         req: RadioSessionUpdateRequest,
     ) {
@@ -78,6 +81,40 @@ object NotificationSessionUtils {
                                 or PlaybackStateCompat.ACTION_SEEK_TO
 
                     )
+                    when {
+                        req.isShuffleOn -> addCustomAction(
+                            MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName,
+                            context.getString(R.string.disable_shuffle_mode),
+                            R.drawable.shuffle_on
+                        )
+
+                        else -> addCustomAction(
+                            MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName,
+                            context.getString(R.string.enable_shuffle_mode),
+                            R.drawable.shuffle
+                        )
+                    }
+                    when (req.loopMode) {
+
+                        RepeatMode.Off -> addCustomAction(
+                            MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName,
+                            context.getString(R.string.change_repeat_mode),
+                            R.drawable.repeat_mode
+                        )
+
+                        RepeatMode.One -> addCustomAction(
+
+                            MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName,
+                            context.getString(R.string.change_repeat_mode),
+                            R.drawable.repeat_mode_one
+                        )
+
+                        RepeatMode.All -> addCustomAction(
+                            MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName,
+                            context.getString(R.string.change_repeat_mode),
+                            R.drawable.repeat_mode_all
+                        )
+                    }
                     build()
                 }
             )
@@ -113,66 +150,67 @@ object NotificationSessionUtils {
             addAction(
                 when {
                     req.isShuffleOn -> context.createAction(
-                        R.drawable.shuffle_on,
+                        MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName,
                         context.getString(R.string.disable_shuffle_mode),
-                        MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName
+                        R.drawable.shuffle_on,
                     )
 
                     else -> context.createAction(
-                        R.drawable.shuffle,
+                        MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName,
                         context.getString(R.string.enable_shuffle_mode),
-                        MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName
+                        R.drawable.shuffle,
                     )
                 }
             )
             addAction(
                 context.createAction(
-                    R.drawable.skip_back,
+                    MediaSessionAction.ACTION_PREVIOUS.actionName,
                     context.getString(R.string.previous),
-                    MediaSessionAction.ACTION_PREVIOUS.actionName
+                    R.drawable.skip_back,
                 )
             )
             addAction(
                 when {
                     req.isPlaying -> context.createAction(
-                        R.drawable.pause,
+                        MediaSessionAction.ACTION_PLAY_PAUSE.actionName,
                         context.getString(R.string.play),
-                        MediaSessionAction.ACTION_PLAY_PAUSE.actionName
+                        R.drawable.pause,
                     )
 
                     else -> context.createAction(
-                        R.drawable.play,
+                        MediaSessionAction.ACTION_PLAY_PAUSE.actionName,
                         context.getString(R.string.pause),
-                        MediaSessionAction.ACTION_PLAY_PAUSE.actionName
+                        R.drawable.play
                     )
                 }
             )
             addAction(
                 context.createAction(
-                    R.drawable.skip_fwd,
+                    MediaSessionAction.ACTION_NEXT.actionName,
                     context.getString(R.string.next),
-                    MediaSessionAction.ACTION_NEXT.actionName
+                    R.drawable.skip_fwd
                 )
             )
             addAction(
                 when (req.loopMode) {
 
                     RepeatMode.Off -> context.createAction(
-                        R.drawable.repeat_mode,
+                        MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName,
                         context.getString(R.string.change_repeat_mode),
-                        MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName
+                        R.drawable.repeat_mode
                     )
 
                     RepeatMode.One -> context.createAction(
-                        R.drawable.repeat_mode_one,
+
+                        MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName,
                         context.getString(R.string.change_repeat_mode),
-                        MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName
+                        R.drawable.repeat_mode_one
                     )
 
                     RepeatMode.All -> context.createAction(
-                        R.drawable.repeat_mode_all,
+                        MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName,
                         context.getString(R.string.change_repeat_mode),
-                        MediaSessionAction.ACTION_SHUFFLE_MODE_SWITCH.actionName
+                        R.drawable.repeat_mode_all
                     )
                 }
             )
@@ -189,9 +227,9 @@ object NotificationSessionUtils {
 
 
     private fun Context.createAction(
-        icon: Int,
+        action: String,
         title: String,
-        action: String
+        @DrawableRes icon:  Int,
     ): NotificationCompat.Action {
         val flags = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         val pendingIntent = PendingIntent.getBroadcast(this, 0, Intent(action), flags)

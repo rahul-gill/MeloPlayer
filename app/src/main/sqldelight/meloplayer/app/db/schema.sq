@@ -21,6 +21,7 @@ CREATE TABLE songs (
     cd_number INTEGER,
     album_id INTEGER,
     subtitle TEXT,
+    date_modified INTEGER AS Instant NOT NULL,
     FOREIGN KEY (album_id) REFERENCES albums(album_id)
 );
 
@@ -104,8 +105,8 @@ WHERE album_id = ?;
 
 insertOrReplaceSong:
 INSERT OR REPLACE INTO songs
-(song_id, title, file_system_path, cover_image_uri, track_number, cd_number, album_id, bit_rate_kbps, sample_rate_hz, length_ms, channels_count, subtitle)
-VALUES (?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?);
+(song_id, title, file_system_path, cover_image_uri, track_number, cd_number, album_id, bit_rate_kbps, sample_rate_hz, length_ms, channels_count, subtitle, date_modified)
+VALUES (?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?,?);
 
 artistExistsWithName:
 SELECT artist_id FROM artists WHERE name = ?;
@@ -150,13 +151,92 @@ SELECT last_insert_rowid();
 
 -- ###################### Query Ops: Listing records #######################################
 songsList:
-SELECT songs.song_id,  songs.title AS song_title, songs.cover_image_uri, artists.name AS artist_name, albums.title AS album_name, genres.name AS genre_name
-FROM songs, song_artists, song_genres, artists, genres, albums
-WHERE songs.song_id = song_artists.song_id
-    AND songs.song_id = song_genres.song_id
-    AND song_artists.artist_id = artists.artist_id
-    AND song_genres.genre_id =  genres.genre_id
-    AND songs.album_id = albums.album_id;
+WITH album_q AS(
+SELECT albums.title AS album_name, albums.album_id AS album_id FROM albums
+UNION
+SELECT 'EMPTY' AS album_name , 0 AS album_id
+),
+artists_q AS(
+SELECT group_concat(artists.name, ', ') AS artists_name,
+        group_concat(artists.artist_id, ', ') AS artist_id,
+        song_id
+FROM artists, song_artists
+WHERE artists.artist_id = song_artists.artist_id AND artists.is_song_artist = 1
+GROUP BY song_id
+UNION
+SELECT 'EMPTY' AS artists_name, 0 , 0 AS song_id
+),
+album_artists_q AS(
+SELECT group_concat(artists.name, ', ') AS artists_name,
+        group_concat(artists.artist_id, ', ') AS artist_id,
+        song_id
+FROM artists, song_artists
+WHERE artists.artist_id = song_artists.artist_id AND artists.is_song_artist = 1
+GROUP BY song_id
+UNION
+SELECT 'EMPTY' AS artists_name, 0 , 0 AS song_id
+),
+genre_q AS(
+SELECT group_concat(genres.name, ', ') AS genre_names, song_genres.song_id FROM genres, song_genres
+WHERE genres.genre_id = song_genres.genre_id
+GROUP BY song_genres.song_id
+UNION
+SELECT 'EMPTY' AS genre_names, 0 AS song_id
+)
+SELECT s.song_id,
+        s.title,
+        s.cover_image_uri,
+        s.date_modified,
+        s.length_ms,
+        s.file_system_path,
+        s.album_id,
+        (SELECT album_name FROM album_q WHERE album_q.album_id = s.album_id OR album_q.album_id = 0   ORDER BY album_q.album_id DESC ) AS album,
+         (SELECT artists_name FROM artists_q WHERE artists_q.song_id = s.song_id OR artists_q.song_id = 0 ORDER BY artists_q.song_id DESC LIMIT 1 ) AS artists,
+         (SELECT artist_id FROM artists_q WHERE artists_q.song_id = s.song_id OR artists_q.song_id = 0  ORDER BY artists_q.song_id DESC LIMIT 1 ) AS artistsIds,
+         (SELECT artists_name FROM album_artists_q WHERE album_artists_q.song_id = s.song_id OR album_artists_q.song_id = 0 ORDER BY album_artists_q.song_id DESC LIMIT 1 ) AS albumArtists,
+         (SELECT artist_id FROM album_artists_q WHERE album_artists_q.song_id = s.song_id OR album_artists_q.song_id = 0 ORDER BY album_artists_q.song_id DESC LIMIT 1 ) AS albumArtistsIds,
+         (SELECT genre_names FROM genre_q WHERE genre_q.song_id = s.song_id OR genre_q.song_id = 0 ORDER BY genre_q.song_id DESC LIMIT 1 ) AS genres
+FROM songs s;
+
+albumList:
+WITH album_artists_q AS(
+SELECT group_concat(artists.name, ', ') AS artists_name,
+        group_concat(artists.artist_id, ', ') AS artist_id,
+        song_id
+FROM artists, song_artists
+WHERE artists.artist_id = song_artists.artist_id AND artists.is_song_artist = 1
+GROUP BY song_id
+UNION
+SELECT 'EMPTY' AS artists_name, 0 , 0 AS song_id
+),
+album_songs_q AS (
+SELECT group_concat(song_id, ', ') AS songs_ids, albums.album_id FROM songs, albums
+WHERE songs.album_id = albums.album_id
+GROUP BY albums.album_id
+)
+SELECT album_id,
+       title,
+       cover_image_uri,
+       (SELECT artists_name
+       FROM album_artists_q, songs
+       WHERE album_artists_q.song_id = songs.song_id
+            AND songs.album_id = al.album_id) AS artists,
+       (SELECT COUNT(*) FROM songs WHERE songs.album_id = al.album_id) AS song_count
+FROM albums al;
+
+
+albumArtistDetailsForSongId:
+SELECT artists.artist_id, artists.name
+FROM artists, song_artists
+WHERE artists.artist_id = song_artists.artist_id
+    AND :song_id = song_artists.song_id
+    AND artists.is_album_artist = 1;
+
+genreDetailsForSongId:
+SELECT genres.genre_id, genres.name
+FROM genres, song_genres
+WHERE genres.genre_id = song_genres.genre_id AND song_genres.song_id = :song_id;
+
 
 artistListWithSongs:
 SELECT artists.name AS artist, songs.title AS song
