@@ -4,6 +4,16 @@
 - [Customizing Compose Pager with fun indicators and transitions 🚥](https://medium.com/androiddevelopers/customizing-compose-pager-with-fun-indicators-and-transitions-12b3b69af2cc)
 - [Create a photo grid with multiselect behavior using Jetpack Compose](https://medium.com/androiddevelopers/create-a-photo-grid-with-multiselect-behavior-using-jetpack-compose-9a8d588a9b63)
 
+## WIP
+- make sync insertions fast enough
+- impl. fts and make sure insertions are still fast enough
+- impl. song_list, artists_list, albums_list, genre_list with sort options
+- impl. artist_songs_list, artists_album_list, album_songs_list, genre_songs_list screen with sort options
+- impl. search screen with search all/ search by artist etc.
+- impl. playback queue(without actually playing anything)
+- impl. playback itself with service, notification etc. all details
+- impl. settings screen
+
 ## TODO/Roadmap
 
 - [ ] Build settings screen for basic settings

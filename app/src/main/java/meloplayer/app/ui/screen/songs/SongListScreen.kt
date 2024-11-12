@@ -131,12 +131,8 @@ fun SongListScreen(
     LaunchedEffect(songsList) {
         if(lastTime == null){
             lastTime = LocalDateTime.now()
-            println("Starting at ${DateTimeFormatter.ISO_DATE_TIME.format(lastTime)} songListSize: ${songsList.size}")
         } else {
             val now = LocalDateTime.now()
-            println("PrevTime: ${DateTimeFormatter.ISO_DATE_TIME.format(lastTime)}" +
-                    " Now: ${DateTimeFormatter.ISO_DATE_TIME.format(now)}" +
-                    " Duration: ${Duration.between(lastTime, now).toMillis()}ms songListSize: ${songsList.size}")
             lastTime = now
         }
     }

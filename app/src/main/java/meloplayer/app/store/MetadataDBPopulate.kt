@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
 import androidx.compose.ui.util.fastDistinctBy
+import com.simplecityapps.ktaglib.AudioProperties
 import com.simplecityapps.ktaglib.KTagLib
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -12,12 +13,13 @@ import meloplayer.app.db.MeloDatabase
 import java.time.Duration
 import java.time.LocalDateTime
 
+
 object MetadataDBPopulate {
 
     suspend fun refreshMetadataDatabase(
         context: Context,
         db: MeloDatabase,
-        propsList: List<MediaStoreFetcherUtil.MediaStoreProperties>,
+        propsList: List<MediaStoreProperties>,
         artistsSeparators: List<Char> = listOf(';', ',', '&')
     ) {
         withContext(Dispatchers.IO){
@@ -27,7 +29,12 @@ object MetadataDBPopulate {
             val nullDetailsSongsPaths = mutableListOf<String>()
             val nullPropertiesSongsPaths = mutableListOf<String>()
             val taglib = KTagLib()
-            for (songItem in propsList.fastDistinctBy { it.path }) {
+            var index = 0
+            var totalMs: Long = 0
+            var totalRecords: Long = 0
+
+            for (songItem in propsList) {
+                val start = LocalDateTime.now()
                 try {
                     db.transaction {
                         val uri = songIdToUri(songItem.id)
@@ -58,7 +65,7 @@ object MetadataDBPopulate {
                             val subtitle = getAttrsOfPropMap(metadata, "SUBTITLE").firstOrNull()?.trim()
 
                             val albumId = if (album != null) {
-                                q.insertAlbum(album, null, cover_image_uri = getArtworkUriForSong(songItem.id).toString())
+                                q.insertOrIgnoreAlbum(album, null, cover_image_uri = getArtworkUriForSong(songItem.id).toString())
                                 q.lastInsertRowId().executeAsOneOrNull()
                             } else {
                                 null
@@ -95,19 +102,20 @@ object MetadataDBPopulate {
                                 }
                                     .toMutableList()
                             artistsExist.forEachIndexed { index, (name, existingId) ->
-
+                                var newId: Long? = null
                                 if (existingId != null) {
                                     //no need to update just the name, because its already same
 
                                     q.setArtistIsSongArtist(true, existingId)
                                 } else {
 
-                                    q.insertArtist(
+                                    q.insertArtistOrIgnore(
                                         name, null, null, is_song_artist = true,
                                         is_album_artist = false,
                                     )
+                                    newId = q.lastInsertRowId().executeAsOne()
                                 }
-
+                                q.insertOrIgnoreInSongArtist(songItem.id, existingId ?: newId)
                             }
 
 
@@ -123,18 +131,20 @@ object MetadataDBPopulate {
                                 }
                             }.toMutableList()
                             albumArtistsExist.forEachIndexed { index, (name, existingId) ->
-
+                                var newId: Long? = null
                                 if (existingId != null) {
                                     //no need to update just the name, because its already same
 
                                     q.setArtistIsAlbumArtist(true, existingId)
                                 } else {
 
-                                    q.insertArtist(
+                                    q.insertArtistOrIgnore(
                                         name, null, null, is_song_artist = false,
                                         is_album_artist = true,
                                     )
+                                    newId = q.lastInsertRowId().executeAsOne()
                                 }
+                                q.insertOrIgnoreInSongArtist(songItem.id, newId)
 
                             }
 
@@ -153,44 +163,26 @@ object MetadataDBPopulate {
                                     .toMutableList()
                             genresExist.forEachIndexed { index, (name, existingId) ->
                                 //no need to update just the name, because its already same
+                                var newId: Long? = null
                                 if (existingId == null) {
-                                    q.insertGenre(name, null)
+                                    q.insertGenreOrIgnore(name, null)
+                                    newId = q.lastInsertRowId().executeAsOne()
                                 }
+                                q.insertOrIgnoreInSongGenre(song_id = songItem.id, existingId ?: newId)
                             }
 
-
-
-                            val artistsExistX =
-                                artists.map {
-                                    Pair(it, q.artistExistsWithName(it)
-                                        .executeAsList().first())
-                                }
-                                    .toMutableList()
-                            val albumArtistsExistX = albumArtists.map {
-                                Pair(it, q.artistExistsWithName(it)
-                                    .executeAsList().first())
-                            }.toMutableList()
-                            val genresExistX =
-                                genres.map {
-                                    Pair(it, q.genreExistsWithName(it)
-                                        .executeAsList().first())
-                                }
-                                    .toMutableList()
-                            artistsExistX.forEach {
-                                q.insertOrIgnoreInSongArtist(songItem.id, it.second)
-                            }
-                            albumArtistsExistX.forEach {
-                                q.insertOrIgnoreInSongArtist(songItem.id, it.second)
-                            }
-                            genresExistX.forEach {
-                                q.insertOrIgnoreInSongGenre(song_id = songItem.id, it.second)
-                            }
 
                         }
                     }
                 } catch (e: Exception){
                     e.printStackTrace()
                 }
+
+                val end = LocalDateTime.now()
+                val time = Duration.between(start , end).toMillis()
+                totalMs += time
+                println("Done ${index+1}/${propsList.size} avg_time_ms_per_record = ${totalMs * 1.0/(index+1)}")
+                index += 1
             }
             //cleanup for deleted songs
             db.transaction {

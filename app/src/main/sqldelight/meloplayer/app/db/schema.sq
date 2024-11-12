@@ -92,9 +92,9 @@ DELETE FROM albums WHERE albums.album_id NOT IN (
 
 -- ###################### Sync Ops: When some records are inserted/updated #######################################
 albumExistsWithName:
-SELECT album_id FROM albums WHERE title = ?;
-insertAlbum:
-INSERT INTO albums (title, release_date, cover_image_uri)
+SELECT album_id FROM albums WHERE title = ? LIMIT 1;
+insertOrIgnoreAlbum:
+INSERT OR IGNORE INTO albums (title, release_date, cover_image_uri)
 VALUES (?, ?, ?);
 updateAlbum:
 UPDATE albums
@@ -109,9 +109,9 @@ INSERT OR REPLACE INTO songs
 VALUES (?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?,?);
 
 artistExistsWithName:
-SELECT artist_id FROM artists WHERE name = ?;
-insertArtist:
-INSERT INTO artists (name, bio, image_uri, is_song_artist, is_album_artist)
+SELECT artist_id FROM artists WHERE name = ?  LIMIT 1;
+insertArtistOrIgnore:
+INSERT OR IGNORE INTO artists (name, bio, image_uri, is_song_artist, is_album_artist)
 VALUES ( ?, ?, ?, ?, ?);
 updateArtist:
 UPDATE artists
@@ -129,9 +129,9 @@ SET is_album_artist = ?
 WHERE artist_id = ?;
 
 genreExistsWithName:
-SELECT genre_id FROM genres WHERE name = ?;
-insertGenre:
-INSERT INTO genres (name, image_uri)
+SELECT genre_id FROM genres WHERE name = ?  LIMIT 1;
+insertGenreOrIgnore:
+INSERT OR IGNORE INTO genres (name, image_uri)
 VALUES (  ?, ?);
 updateGenre:
 UPDATE genres

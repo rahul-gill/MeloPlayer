@@ -1,12 +1,11 @@
 package meloplayer.app.store.models
 
-import java.time.Instant
 
 data class SongListItem(
     val songID: Long,
     val title: String,
     val coverImageUri: String?,
-    val dateModified: Instant,
+    val dateModified: Long?,
     val lengthMs: Long,
     val fileSystemPath: String,
     val albumId: Long?,

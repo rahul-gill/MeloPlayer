@@ -23,6 +23,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,24 +43,20 @@ import meloplayer.core.store.model.SongSortOrder
 import meloplayer.core.store.repo.ArtistRepository
 import meloplayer.core.ui.components.MediaItemListCard
 import meloplayer.core.ui.components.base.PopupMenu
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ArtistListScreen() {
+fun ArtistListScreen(
+    viewModel: ArtistListViewModel = koinViewModel()
+) {
     val context = LocalContext.current
-    var artists by remember {
-        mutableStateOf(
-            ArtistRepository.instance
-                .artists().getOrNull().also {
-                    Toast.makeText(context, "Got ${it?.size} items", Toast.LENGTH_SHORT).show()
-                } ?: listOf()
-        )
-    }
+    val artists by viewModel.artists.collectAsState(listOf())
     var sortOrder by remember {
         mutableStateOf(SongSortOrder.Name(isAscending = true))
     }
     val onSongClick = remember {
-        { song: Artist ->
+        { song: meloplayer.app.store.db.entities.Artist ->
 //        if (!songs.isNullOrEmpty()) {
 //            playbackManager.startPlayingWithQueueInit(songs?.map { it.id } ?: listOf())
 //        }
@@ -142,7 +139,7 @@ fun ArtistListScreen() {
                     MediaItemListCard(
                         imageModel = ContentUris.withAppendedId(
                             "content://media/external/audio/albumart".toUri(),
-                            artist.albums.first().id
+                            0
                         ),
                         title = artist.name,
                         subtitle = "",

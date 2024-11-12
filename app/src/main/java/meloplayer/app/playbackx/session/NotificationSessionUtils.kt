@@ -23,7 +23,6 @@ object NotificationSessionUtils {
         mediaSession: MediaSessionCompat,
         req: RadioSessionUpdateRequest,
     ) {
-        println("updateMediaSessionDetails(req=$req)")
         mediaSession.run {
             setMetadata(
                 MediaMetadataCompat.Builder().run {
@@ -127,7 +126,6 @@ object NotificationSessionUtils {
         mediaSession: MediaSessionCompat,
         req: RadioSessionUpdateRequest
     ): Notification {
-        println("buildNotification(req=$req)")
         val notification = NotificationCompat.Builder(
             context,
             CHANNEL_ID

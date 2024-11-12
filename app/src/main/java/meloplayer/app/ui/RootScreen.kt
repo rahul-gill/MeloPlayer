@@ -51,7 +51,9 @@ import meloplayer.app.playbackx.glue.PlaybackGlue
 import meloplayer.app.ui.comps.nowplaying.MiniPlayer
 import meloplayer.app.ui.comps.nowplaying.NowPlayingPanel
 import meloplayer.app.ui.screen.AlbumListScreen
+import meloplayer.app.ui.screen.ArtistListScreen
 import meloplayer.app.ui.screen.songs.SongListScreen
+//import meloplayer.app.ui.screen.songs.SongListScreen
 import meloplayer.core.store.repo.SongsRepository
 import meloplayer.core.ui.components.nowplaying.PlayerSheetScaffold
 import meloplayer.core.ui.components.nowplaying.rememberPlayerSheetState
@@ -218,6 +220,7 @@ fun RootScreen(
                 }
 
                 TabScreen.Artists -> {
+                    ArtistListScreen()
 //                    val withSongs = remember {
 //                        db.schemaQueries.artistListWithSongs().executeAsList()
 //                            .sortedBy { it.artist }

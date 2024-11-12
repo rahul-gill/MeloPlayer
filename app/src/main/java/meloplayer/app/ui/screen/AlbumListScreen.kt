@@ -23,6 +23,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,29 +37,26 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import kotlinx.coroutines.delay
 import meloplayer.app.R
+import meloplayer.app.ui.screen.songs.SongListViewModel
 import meloplayer.core.store.model.Album
 import meloplayer.core.store.model.SongSortOrder
 import meloplayer.core.store.repo.AlbumRepository
 import meloplayer.core.ui.components.MediaItemListCard
 import meloplayer.core.ui.components.base.PopupMenu
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlbumListScreen() {
+fun AlbumListScreen(
+    viewModel: AlbumListViewModel = koinViewModel()
+) {
     val context = LocalContext.current
-    var albums by remember {
-        mutableStateOf(
-            AlbumRepository.instance
-                .albums().getOrNull().also {
-                    Toast.makeText(context, "Got ${it?.size} items", Toast.LENGTH_SHORT).show()
-                } ?: listOf()
-        )
-    }
+    val albums by viewModel.albumsList.collectAsState(initial = listOf())
     var sortOrder by remember {
         mutableStateOf(SongSortOrder.Name(isAscending = true))
     }
     val onSongClick = remember {
-        { song: Album ->
+        { song: meloplayer.app.store.db.entities.Album ->
 //        if (!songs.isNullOrEmpty()) {
 //            playbackManager.startPlayingWithQueueInit(songs?.map { it.id } ?: listOf())
 //        }
@@ -141,10 +139,10 @@ fun AlbumListScreen() {
                     MediaItemListCard(
                         imageModel = ContentUris.withAppendedId(
                             "content://media/external/audio/albumart".toUri(),
-                            album.id
+                            album.albumId
                         ),
                         title = album.title,
-                        subtitle = album.albumArtist ?: "",
+                        subtitle = album.releaseDate.toString() ?: "",
                         onClick = { onSongClick(album) }
                     )
                 }

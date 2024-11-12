@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.sqldelight)
+    alias(libs.plugins.ksp)
 }
 
 
@@ -81,6 +82,9 @@ dependencies {
     implementation(libs.sqldelight.driver)
     implementation(libs.sqldelight.coroutines)
     implementation(libs.taglib)
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
 
     debugImplementation(files("libs/lib-decoder-ffmpeg-debug.aar"))
     releaseImplementation(files("libs/lib-decoder-ffmpeg-release.aar"))

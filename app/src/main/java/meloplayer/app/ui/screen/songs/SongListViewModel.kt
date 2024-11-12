@@ -8,6 +8,7 @@ import meloplayer.app.store.models.SongListItem
 import meloplayer.app.store.models.SongSortOrder
 import meloplayer.app.store.repo.SongRepo
 import meloplayer.app.store.repo.compareSongs
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -31,7 +32,7 @@ class SongListViewModel(
             is SongSortOrder.Album -> it.albumName ?: "Unknown Album"
             is SongSortOrder.DateModified -> monthFormatter.format(
                 LocalDate.ofInstant(
-                    it.dateModified, ZoneId.systemDefault()
+                    Instant.ofEpochMilli(it.dateModified ?: 0), ZoneId.systemDefault()
                 )
             )
 

@@ -5,12 +5,16 @@ import app.cash.sqldelight.coroutines.mapToList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import meloplayer.app.db.MeloDatabase
 import meloplayer.app.store.RepositoryDefaults
+import meloplayer.app.store.db.MediaMetadataDB
 import meloplayer.app.store.models.SongFilter
 import meloplayer.app.store.models.SongListItem
 import meloplayer.app.store.models.SongSortOrder
+import java.time.Instant
 import kotlin.math.exp
 import kotlin.math.min
 
@@ -21,8 +25,59 @@ interface SongRepo {
 }
 
 class SongRepoImpl(
-    private val db: MeloDatabase
+    private val database: MediaMetadataDB
 ) : SongRepo {
+
+    private suspend fun fetchSongs(): List<SongListItem> {
+        return withContext(Dispatchers.IO) {
+            // Fetch all songs
+            val songs = database.songDao().getAllSongs()
+
+            // Fetch all albums, artists, genres in one go
+            val albums = database.albumDao().getAllAlbums().first().associateBy { it.albumId }
+            val artists = database.artistDao().getAllArtists().first().associateBy { it.artistId }
+            val genres = database.genreDao().getAllGenres().associateBy { it.genreId }
+
+            // Fetch all song-artist and song-genre relationships
+            val songArtists = database.relationsDao().getAllSongArtists() // Fetch all relationships
+            val songGenres = database.relationsDao().getAllSongGenres()   // Fetch all relationships
+
+            // Create a map to track artist IDs for each song
+            val songArtistMap = songArtists.groupBy { it.songId }
+            // Create a map to track genre IDs for each song
+            val songGenreMap = songGenres.groupBy { it.songId }
+
+            // Build the list of SongListItems
+            songs.map { song ->
+                val album = albums[song.albumId]
+                val songArtistIds = songArtistMap[song.songId]?.map { it.artistId } ?: emptyList()
+                val songGenreNames = songGenreMap[song.songId]?.map { genres[it.genreId]?.name }?.filterNotNull()?.joinToString(", ")
+
+                val artistNames = songArtistIds.mapNotNull { artists[it]?.name }.joinToString(", ")
+                val albumArtistNames = album?.let { albumArtists ->
+                    songArtistIds.mapNotNull { artists[it]?.name }.joinToString(", ")
+                }
+
+                SongListItem(
+                    songID = song.songId,
+                    title = song.title,
+                    coverImageUri = song.coverImageUri,
+                    dateModified = song.dateModified,
+                    lengthMs = song.lengthMs,
+                    fileSystemPath = song.fileSystemPath,
+                    albumId = album?.albumId,
+                    albumName = album?.title,
+                    artistNames = artistNames,
+                    artistIds = songArtistIds.joinToString(", "),
+                    albumArtistNames = albumArtistNames,
+                    albumArtistIds = songArtistIds.joinToString(", "), // Assuming album artist IDs are same as song artist IDs
+                    genreNames = songGenreNames
+                )
+            }
+        }
+    }
+
+
     override fun getSongs(
         songFilter: List<SongFilter>
     ): Flow<List<SongListItem>> {
@@ -33,16 +88,14 @@ class SongRepoImpl(
             )
         }
         val finalFilters = songFilter + defaultFilters
-        println("SongRepoImpl: getSongsStart")
-        val res =
-            db.schemaQueries.songsList(::SongListItem).asFlow()
-                .mapToList(Dispatchers.IO)
+
+        val res = database.songDao().getAllSongsSummary()
                 .map { list ->
+                    println("Got songs new: " + list)
                     list.filter { item ->
                         finalFilters.all { item.isMatchingFilter(it) }
                     }
                 }
-        println("SongRepoImpl: getSongsEnd")
         return res
     }
 
@@ -56,7 +109,11 @@ fun compareSongs(song1: SongListItem, song2: SongListItem, sortOrder: SongSortOr
         else if (song2.albumName == null) -1
         else song1.albumName.compareTo(song2.albumName)
 
-        is SongSortOrder.DateModified -> song1.dateModified.compareTo(song2.dateModified)
+        is SongSortOrder.DateModified ->  when {
+            (song1.dateModified ?: 0) < (song2.dateModified ?: 0) -> -1
+            (song1.dateModified ?: 0) > (song2.dateModified ?: 0) -> -1
+            else -> 0
+        }
         is SongSortOrder.Duration -> song1.lengthMs.compareTo(song2.lengthMs)
         is SongSortOrder.Name -> song1.title.compareTo(song2.title)
     }
