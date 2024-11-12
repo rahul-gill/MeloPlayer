@@ -11,21 +11,24 @@ import meloplayer.app.store.RepositoryDefaults
 import meloplayer.app.store.models.SongFilter
 import meloplayer.app.store.models.SongListItem
 import meloplayer.app.store.models.SongSortOrder
+import meloplayer.app.storex.dao.SongsDao
+import meloplayer.app.storex.entities.derived.SongDetailsMinimal
+import meloplayer.app.storex.entities.derived.SongWithAllDetails
 import kotlin.math.exp
 import kotlin.math.min
 
 interface SongRepo {
     fun getSongs(
         songFilter: List<SongFilter>
-    ): Flow<List<SongListItem>>
+    ): Flow<List<SongWithAllDetails>>
 }
 
 class SongRepoImpl(
-    private val db: MeloDatabase
+    private val dao: SongsDao
 ) : SongRepo {
     override fun getSongs(
         songFilter: List<SongFilter>
-    ): Flow<List<SongListItem>> {
+    ): Flow<List<SongWithAllDetails>> {
         val defaultFilters = RepositoryDefaults.BlacklistDirectories.map {
             SongFilter.DirectoryPathRecursive(
                 folderPath = it.absolutePath.toString(),
@@ -34,9 +37,7 @@ class SongRepoImpl(
         }
         val finalFilters = songFilter + defaultFilters
         println("SongRepoImpl: getSongsStart")
-        val res =
-            db.schemaQueries.songsList(::SongListItem).asFlow()
-                .mapToList(Dispatchers.IO)
+        val res = dao.getSongWithAllDetails()
                 .map { list ->
                     list.filter { item ->
                         finalFilters.all { item.isMatchingFilter(it) }
@@ -49,16 +50,20 @@ class SongRepoImpl(
 }
 
 //Comparator like func
-fun compareSongs(song1: SongListItem, song2: SongListItem, sortOrder: SongSortOrder): Int {
+fun compareSongs(song1: SongWithAllDetails, song2: SongWithAllDetails, sortOrder: SongSortOrder): Int {
     val res: Int = when (sortOrder) {
-        is SongSortOrder.Album -> if (song1.albumName == null && song2.albumName == null) 0
-        else if (song1.albumName == null) 1
-        else if (song2.albumName == null) -1
-        else song1.albumName.compareTo(song2.albumName)
+        is SongSortOrder.Album -> if (song1.album == null && song2.album == null) 0
+        else if (song1.album == null) 1
+        else if (song2.album == null) -1
+        else song1.album.title.compareTo(song2.album.title)
 
-        is SongSortOrder.DateModified -> song1.dateModified.compareTo(song2.dateModified)
-        is SongSortOrder.Duration -> song1.lengthMs.compareTo(song2.lengthMs)
-        is SongSortOrder.Name -> song1.title.compareTo(song2.title)
+        is SongSortOrder.DateModified -> when {
+            song1.song.dateModified < song1.song.dateModified -> -1
+            song1.song.dateModified > song1.song.dateModified -> 1
+            else -> 0
+        }
+        is SongSortOrder.Duration -> song1.song.lengthMs.compareTo(song2.song.lengthMs)
+        is SongSortOrder.Name -> song1.song.title.compareTo(song2.song.title)
     }
     return if (sortOrder.isAscending) res
     else if (res == 1) -1
@@ -68,103 +73,93 @@ fun compareSongs(song1: SongListItem, song2: SongListItem, sortOrder: SongSortOr
 
 
 //TODO: write tests for it
-fun SongListItem.isMatchingFilter(songFilter: SongFilter): Boolean {
+fun SongWithAllDetails.isMatchingFilter(songFilter: SongFilter): Boolean {
     val isSatisfied: Boolean = when (songFilter) {
         is SongFilter.AlbumArtist -> {
-            if(albumArtistNames == null){
-                return false
-            } else if (songFilter.fuzzyMatch) {
-                albumArtistNames.splitToSequence(", ").any {
-                    levenshteinDistanceNormalized(
+            artists.any { artist ->
+                when {
+                    !artist.isAlbumArtist -> false
+                    songFilter.fuzzyMatch -> levenshteinDistanceNormalized(
                         songFilter.albumArtist,
-                        it
+                        artist.name
                     ) < LevenshteinDistanceThreshold
+
+                    else -> artist.name.contains(songFilter.albumArtist)
                 }
-            } else {
-                albumArtistNames.splitToSequence(", ").any { it.contains(songFilter.albumArtist) }
             }
         }
 
         is SongFilter.AlbumArtistIdExact -> {
-            albumArtistIds?.splitToSequence(", ")
-                ?.map { it.toLongOrNull() }
-                ?.any { it == songFilter.albumArtistId }
-                ?: false
+            artists.any { artist -> artist.isAlbumArtist && songFilter.albumArtistId == artist.id }
         }
 
         is SongFilter.AlbumIdExact -> {
-            if (albumId == null) {
-                false
+            if(album == null){
+                return false
             } else {
-                albumId == songFilter.albumId
+                album.id == songFilter.albumId
             }
         }
 
         is SongFilter.AlbumName -> {
-            if (albumName == null) {
-                return false
-            } else if (songFilter.fuzzyMatch) {
-                levenshteinDistanceNormalized(
+            when {
+                album == null -> false
+                songFilter.fuzzyMatch -> levenshteinDistanceNormalized(
                     songFilter.album,
-                    albumName
+                    album.title
                 ) < LevenshteinDistanceThreshold
-            } else {
-                albumName.contains(songFilter.album)
+                else -> album.title.contains(songFilter.album)
             }
         }
 
         is SongFilter.Artist -> {
-            if(artistNames == null){
-                return false
-            } else if (songFilter.fuzzyMatch) {
-                artistNames.splitToSequence(", ").any {
-                    levenshteinDistanceNormalized(
+            artists.any { artist ->
+                when {
+                    !artist.isSongArtist -> false
+                    songFilter.fuzzyMatch -> levenshteinDistanceNormalized(
                         songFilter.artist,
-                        it
+                        artist.name
                     ) < LevenshteinDistanceThreshold
+
+                    else -> artist.name.contains(songFilter.artist)
                 }
-            } else {
-                artistNames.splitToSequence(", ").any { it.contains(songFilter.artist) }
             }
         }
 
         is SongFilter.ArtistsIdExact -> {
-            artistIds?.splitToSequence(", ")
-                ?.map { it.toLongOrNull() }
-                ?.any { it == songFilter.artistId }
-                ?: false
+            artists.any { it.id == songFilter.artistId }
         }
 
         is SongFilter.DirectoryPathExact -> {
-            fileSystemPath.substringBeforeLast("/") == songFilter.folderPath
+            song.fileSystemPath.substringBeforeLast("/") == songFilter.folderPath
         }
 
         is SongFilter.DirectoryPathRecursive -> {
-            fileSystemPath.contains(songFilter.folderPath)
+            song.fileSystemPath.contains(songFilter.folderPath)
         }
 
         is SongFilter.DurationLessThan -> {
-            lengthMs < songFilter.durationMillis
+            song.lengthMs < songFilter.durationMillis
         }
 
         is SongFilter.GenreExact -> {
-            genreNames?.splitToSequence(", ")?.any{
-                songFilter.genreName == it
-            } ?: return false
+            genres.any { genre ->
+                genre.name == songFilter.genreName
+            }
         }
 
         is SongFilter.GetOneById -> {
-            songID == songFilter.id
+            song.id == songFilter.id
         }
 
         is SongFilter.SearchByTitle -> {
             if (songFilter.fuzzyMatch) {
                 levenshteinDistanceNormalized(
                     songFilter.titleQuery,
-                    title
+                    song.title
                 ) < LevenshteinDistanceThreshold
             } else {
-                title.contains(songFilter.titleQuery)
+                song.title.contains(songFilter.titleQuery)
             }
         }
     }

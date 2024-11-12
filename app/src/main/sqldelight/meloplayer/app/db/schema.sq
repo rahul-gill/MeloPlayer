@@ -34,12 +34,26 @@ CREATE TABLE artists (
     image_uri TEXT
 );
 
+CREATE INDEX artist_name ON artists(name);
+
+
 CREATE TABLE genres (
     genre_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     image_uri TEXT
 );
 
+CREATE INDEX genre_name ON genres(name);
+
+
+CREATE TABLE tags (
+    tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    tag_group TEXT
+);
+
+
+CREATE INDEX tag_group ON tags(tag_group);
 
 CREATE TABLE song_artists (
     song_id INTEGER,
@@ -49,7 +63,6 @@ CREATE TABLE song_artists (
     FOREIGN KEY (artist_id) REFERENCES artists(artist_id)
 );
 
-
 CREATE TABLE song_genres (
     song_id INTEGER,
     genre_id INTEGER,
@@ -57,6 +70,15 @@ CREATE TABLE song_genres (
     FOREIGN KEY (song_id) REFERENCES songs(song_id),
     FOREIGN KEY (genre_id) REFERENCES genres(genre_id)
 );
+
+CREATE TABLE song_tags (
+    song_id INTEGER,
+    tag_id INTEGER,
+    PRIMARY KEY (song_id, tag_id),
+    FOREIGN KEY (song_id) REFERENCES songs(song_id),
+    FOREIGN KEY (tag_id) REFERENCES tags(tag_id)
+);
+
 
 
 -- ###################### Sync Ops: When some records are deleted #######################################
@@ -247,3 +269,16 @@ artistListWithAlbums:
 SELECT artists.name AS artist_name, albums.title AS album_name
 FROM artists, songs, song_artists, albums
 WHERE artists.artist_id = song_artists.artist_id AND song_artists.song_id = songs.song_id AND albums.album_id = songs.album_id;
+
+
+getArtistIdsByNames:
+SELECT artist_id FROM artists WHERE artists.name IN :names;
+
+getArtistsByNames:
+SELECT * FROM artists WHERE artists.name IN :names;
+
+getGenresByNames:
+SELECT * FROM genres WHERE name IN :names;
+
+getGenreIdsByNames:
+SELECT genre_id FROM genres WHERE name IN :names;

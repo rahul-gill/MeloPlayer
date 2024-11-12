@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.sqldelight)
+    alias(libs.plugins.room)
+    alias(libs.plugins.ksp)
 }
 
 
@@ -30,7 +32,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -49,11 +51,12 @@ android {
     buildFeatures {
         compose = true
     }
+    room {
+        schemaDirectory("$projectDir/schemas")
+    }
+
 }
 
-composeCompiler {
-    enableStrongSkippingMode = true
-}
 
 
 dependencies {
@@ -90,6 +93,12 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.compose)
     testImplementation(libs.koin.test)
+
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
+
+    implementation(libs.requery.sqlite)
 
 
     testImplementation(libs.junit)

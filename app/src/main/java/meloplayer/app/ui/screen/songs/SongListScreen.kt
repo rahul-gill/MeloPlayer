@@ -66,6 +66,7 @@ import meloplayer.app.R
 import meloplayer.app.store.models.SongListItem
 import meloplayer.app.store.models.SongSortOrder
 import meloplayer.app.store.models.toStringResource
+import meloplayer.app.storex.entities.derived.SongWithAllDetails
 import meloplayer.core.ui.components.MediaItemGridCard
 import meloplayer.core.ui.components.MediaItemListCard
 import meloplayer.core.ui.components.base.LargeTopAppBar
@@ -92,7 +93,7 @@ val monthFormatter by lazy {
 fun SongListScreen(
     viewModel: SongListViewModel = koinViewModel()
 ) {
-    val onSongClick = { song: SongListItem ->
+    val onSongClick = { song: SongWithAllDetails ->
 //        if (!songs.isNullOrEmpty()) {
 //            if (PlaybackGlue.instance.playbackManagerX.playbackStateX.value is PlaybackStateX.Empty) {
 //                PlaybackGlue.instance.playbackManagerX.handleCommand(PlaybackCommand.AddItemsToQueue(
@@ -356,9 +357,9 @@ private fun SongSortOrderSelectSheet(
 private fun SongsResponsiveGrid(
     modifier: Modifier = Modifier,
     selectedIds: Set<Int>,
-    songsNotNull: Map<String, List<Pair<Int, SongListItem>>>,
+    songsNotNull: Map<String, List<Pair<Int, SongWithAllDetails>>>,
     inSelectionMode: Boolean,
-    onSongClick: (SongListItem) -> Unit,
+    onSongClick: (SongWithAllDetails) -> Unit,
     setSelectedIds: (Set<Int>) -> Unit
 ) {
     val state = rememberLazyGridState()
@@ -409,6 +410,13 @@ private fun SongsResponsiveGrid(
                 } else {
                     selectedIds.contains(indexSongPair.first)
                 }
+                val artists = remember(indexSongPair) {
+                    var artists = ""
+                    indexSongPair.second.artists
+                        .filter { it.isSongArtist }
+                        .forEach { artist -> artists += "${artist.name} | " }
+                    artists
+                }
                 if (isLayoutTypeVertical()) {
                     MediaItemListCard(
                         modifier = Modifier
@@ -420,10 +428,9 @@ private fun SongsResponsiveGrid(
                                     }
                                 }
                             },
-                        imageModel = indexSongPair.second.coverImageUri
-                            ?: painterResource(id = R.drawable.app_icon_monochrome),
-                        title = indexSongPair.second.title,
-                        subtitle = (indexSongPair.second.albumName ?: "") + " - " + (indexSongPair.second.artistNames ?: ""),
+                        imageModel = indexSongPair.second.song.coverImageUri,
+                        title = indexSongPair.second.song.title,
+                        subtitle = (indexSongPair.second.album?.title ?: "") + " - " + artists,
                         onClick = {
                             if (isSelected == null) {
                                 onSongClick(indexSongPair.second)
@@ -446,10 +453,9 @@ private fun SongsResponsiveGrid(
                                     }
                                 }
                             },
-                        imageModel = indexSongPair.second.coverImageUri
-                            ?: painterResource(id = R.drawable.app_icon_monochrome),
-                        title = indexSongPair.second.title,
-                        subtitle = (indexSongPair.second.albumName ?: "") + " - " + (indexSongPair.second.artistNames ?: ""),
+                        imageModel = indexSongPair.second.song.coverImageUri,
+                        title = indexSongPair.second.song.title,
+                        subtitle = (indexSongPair.second.album?.title ?: "") + " - " + artists,
                         onClick = {
                             if (isSelected == null) {
                                 onSongClick(indexSongPair.second)

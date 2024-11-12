@@ -6,7 +6,10 @@ import android.provider.BaseColumns
 import android.provider.MediaStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.time.Duration
 import java.time.Instant
+import java.time.LocalDateTime
+import kotlin.streams.asStream
 
 object MediaStoreFetcherUtil {
     data class MediaStoreProperties(
@@ -30,7 +33,8 @@ object MediaStoreFetcherUtil {
                     null,
                     null
                 ) ?: return@withContext Result.failure(ContentResolverQueryNullException())
-
+                val t1 = LocalDateTime.now()
+                println("Before starting mediastore fetch $t1")
                 val songs = generateSequence { if (cursor.moveToNext()) cursor else null }
                     .map {
                         val id =
@@ -47,6 +51,9 @@ object MediaStoreFetcherUtil {
                     }
                     .filterNotNull()
                     .toList()
+                val t2 = LocalDateTime.now()
+                println("After mediastore fetch $t2")
+                println("took time = ${Duration.between(t1,t2).toMillis()}ms in mediastore fetch")
 
                 cursor.close()
                 return@withContext Result.success(songs)

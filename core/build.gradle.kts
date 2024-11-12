@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.compose.compiler.gradle.ComposeFeatureFlag
+
 plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.jetbrainsKotlinAndroid)
@@ -39,7 +41,7 @@ android {
 
 
 composeCompiler {
-    enableStrongSkippingMode = true
+    featureFlags.addAll(ComposeFeatureFlag.StrongSkipping)
 }
 
 

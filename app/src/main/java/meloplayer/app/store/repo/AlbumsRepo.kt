@@ -17,15 +17,15 @@ interface AlbumsRepo {
     ): Flow<List<AlbumListItem>>
 }
 
-class AlbumsRepoImpl(
-    private val db: MeloDatabase,
-    private val songRepo: SongRepo
-): AlbumsRepo {
-    override fun getAlbums(songFilter: List<SongFilter>): Flow<List<AlbumListItem>> {
+//class AlbumsRepoImpl(
+//    private val db: MeloDatabase,
+//    private val songRepo: SongRepo
+//): AlbumsRepo {
+//    override fun getAlbums(songFilter: List<SongFilter>): Flow<List<AlbumListItem>> {
 
 
 
-        return db.schemaQueries.albumList(mapper = ::AlbumListItem)
-            .asFlow().mapToList(Dispatchers.IO)
-    }
-}
+//        return db.schemaQueries.albumList(mapper = ::AlbumListItem)
+//            .asFlow().mapToList(Dispatchers.IO)
+//    }
+//}

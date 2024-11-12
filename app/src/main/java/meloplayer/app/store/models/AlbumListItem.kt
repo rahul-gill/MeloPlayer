@@ -1,7 +1,5 @@
 package meloplayer.app.store.models
 
-import android.net.Uri
-
 data class AlbumListItem(
     val albumId: Long,
     val albumName: String,

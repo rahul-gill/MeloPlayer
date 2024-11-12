@@ -3,8 +3,8 @@ androidx-activity = "1.9.1"
 agp = "8.5.2"
 coilCompose = "2.6.0"
 coreSplashscreen = "1.1.0-rc01"
-desugar_jdk_libs = "2.1.0"
-kotlin = "2.0.0"
+desugar_jdk_libs = "2.1.1"
+kotlin = "2.0.20"
 coreKtx = "1.13.1"
 junit = "4.13.2"
 androidx-junit = "1.2.1"
@@ -24,6 +24,8 @@ media = "1.7.0"
 taglib = "1.4"
 sqldelight = "2.0.2"
 koin-bom = "4.0.0-RC1"
+room = "2.6.1"
+ksp = "2.0.20-1.0.24"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
@@ -66,10 +68,15 @@ koin-android = { module = "io.insert-koin:koin-android" }
 koin-compose = { module = "io.insert-koin:koin-androidx-compose" }
 koin-test = { module =  "io.insert-koin:koin-test-junit4" }
 
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 
 sqldelight-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
 sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
 taglib = { module = "com.github.timusus:KTagLib", version.ref = "taglib" }
+
+requery-sqlite = { module = "com.github.requery:sqlite-android", version = "3.43.0" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -77,3 +84,5 @@ jetbrainsKotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "k
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+room =  { id = "androidx.room", version.ref = "room" }
