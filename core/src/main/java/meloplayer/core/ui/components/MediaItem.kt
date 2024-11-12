@@ -43,15 +43,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import wow.app.core.R
 
 
 @Composable
 fun MediaItemGridCard(
-    imageModel: Any,
+    imageModel: Any?,
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
@@ -80,6 +82,7 @@ fun MediaItemGridCard(
                     AsyncImage(
                         imageModel,
                         null,
+                        placeholder = painterResource(R.drawable.placeholder_music),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .aspectRatio(1f)
@@ -175,7 +178,7 @@ fun MediaItemGridCard(
 @Composable
 fun MediaItemListCard(
     modifier: Modifier = Modifier,
-    imageModel: Any,
+    imageModel: Any?,
     title: String,
     subtitle: String,
     highlightedTitle: Boolean = false,
@@ -199,6 +202,7 @@ fun MediaItemListCard(
                     AsyncImage(
                         imageModel,
                         null,
+                        placeholder = painterResource(R.drawable.placeholder_music),
                         modifier = Modifier
                             .size(45.dp)
                             .clip(RoundedCornerShape(10.dp)),

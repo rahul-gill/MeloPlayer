@@ -2,37 +2,59 @@ package meloplayer.app
 
 import android.graphics.Color
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import app.cash.sqldelight.ColumnAdapter
+import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import meloplayer.app.db.Albums
+import meloplayer.app.db.MeloDatabase
+import meloplayer.app.db.Songs
+import meloplayer.app.playbackx.glue.PlaybackGlue
 import meloplayer.app.prefs.PreferenceManager
-import meloplayer.app.store.LibrarySyncManger
+import meloplayer.app.store.MediaStoreFetcherUtil.getSongsMediaStoreProperties
+import meloplayer.app.store.MetadataDBPopulate
+import meloplayer.app.storex.MeloDB
+import meloplayer.app.storex.SyncManager
 import meloplayer.app.ui.RootScreen
+import meloplayer.core.startup.applicationContextGlobal
 import meloplayer.core.ui.AppTheme
 import meloplayer.core.ui.ColorSchemeType
 import org.koin.android.ext.android.inject
+import org.koin.compose.koinInject
+import java.time.Duration
+import java.time.Instant
+import java.time.LocalDateTime
 
 class MainActivity : ComponentActivity() {
 
-    val syncer by inject<LibrarySyncManger>()
+   // val db by inject<MeloDatabase>()
+
+
+    val syncM by inject<SyncManager>()
+    val db by inject<MeloDB>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        GlobalScope.launch {
-            syncer.steps()
-        }
 
-        //PlaybackGlue.instance.onStartImpl()
+        PlaybackGlue.instance.onStartImpl()
 
 
         enableEdgeToEdge(
@@ -64,6 +86,33 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     RootScreen()
+                }
+                Button(
+
+                    modifier = Modifier.padding(top = 50.dp),
+                    onClick = {
+                    GlobalScope.launch {
+                        syncM.syncDatabaseWithFileSystem()
+                    }
+                }) {
+                    Text("Start the sync process")
+                }
+                Button(
+
+                    modifier = Modifier.padding(top = 100.dp),
+                    onClick = {
+                        val start = LocalDateTime.now()
+                        Toast.makeText(this@MainActivity, "Start", Toast.LENGTH_SHORT).show()
+                        GlobalScope.launch(Dispatchers.IO) {
+                            val x = db.songsDao().getSongsWithAlbumAndArtists()
+                            withContext(Dispatchers.Main){
+                                val end  = LocalDateTime.now()
+                                Toast.makeText(this@MainActivity, "End after " +
+                                        "${Duration.between(start, end).toMillis()}ms", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }) {
+                    Text("Start query")
                 }
             }
         }

@@ -68,14 +68,15 @@ koin-android = { module = "io.insert-koin:koin-android" }
 koin-compose = { module = "io.insert-koin:koin-androidx-compose" }
 koin-test = { module =  "io.insert-koin:koin-test-junit4" }
 
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 
 sqldelight-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
 sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
 taglib = { module = "com.github.timusus:KTagLib", version.ref = "taglib" }
 
-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room"}
-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room"}
-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room"}
+requery-sqlite = { module = "com.github.requery:sqlite-android", version = "3.43.0" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -84,3 +85,4 @@ androidLibrary = { id = "com.android.library", version.ref = "agp" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+room =  { id = "androidx.room", version.ref = "room" }
