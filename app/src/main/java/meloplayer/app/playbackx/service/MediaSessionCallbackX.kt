@@ -59,23 +59,10 @@ class MediaSessionCallbackX(
         }
     }
 
-    override fun onRewind() {
-        super.onRewind()
-    }
-
     private fun onRewindImpl() {
 //        playbackManger.player.playbackPosition.value?.currentDurationMillis?.let { currentPos ->
 //            val seekAt = (currentPos - PreferenceManager.rewindBackDuration.value)
 //                .coerceAtLeast(0L)
-//            playbackManger.player.seekTo(seekAt)
-//        }
-    }
-
-    override fun onFastForward() {
-        super.onFastForward()
-//        playbackManger.player.playbackPosition.value?.let { pos ->
-//            val seekAt = (pos.currentDurationMillis - PreferenceManager.rewindBackDuration.value)
-//                .coerceAtMost(pos.totalDurationMillis)
 //            playbackManger.player.seekTo(seekAt)
 //        }
     }

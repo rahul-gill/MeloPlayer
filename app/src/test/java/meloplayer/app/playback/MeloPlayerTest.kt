@@ -11,6 +11,6 @@ class MeloPlayerTest {
 
         println("when null: " + (result?.isEmpty() != false))
         result = listOf("dsada")
-        println("when not empty: " + (result?.isEmpty() != false))
+        println("when not empty: " + (result.isEmpty() != false))
     }
 }

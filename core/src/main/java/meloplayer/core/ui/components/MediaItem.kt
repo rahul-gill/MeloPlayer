@@ -80,7 +80,7 @@ fun MediaItemGridCard(
                         if (selected == true) 16.dp else 5.dp
                     }
                     AsyncImage(
-                        imageModel,
+                        imageModel ?: painterResource(R.drawable.placeholder_music),
                         null,
                         placeholder = painterResource(R.drawable.placeholder_music),
                         contentScale = ContentScale.Crop,
@@ -200,9 +200,11 @@ fun MediaItemListCard(
                 leading()
                 Box {
                     AsyncImage(
-                        imageModel,
+                        imageModel ,
                         null,
                         placeholder = painterResource(R.drawable.placeholder_music),
+                        fallback = painterResource(R.drawable.placeholder_music),
+                        error = painterResource(R.drawable.placeholder_music),
                         modifier = Modifier
                             .size(45.dp)
                             .clip(RoundedCornerShape(10.dp)),

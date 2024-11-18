@@ -16,29 +16,19 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import app.cash.sqldelight.ColumnAdapter
-import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import meloplayer.app.db.Albums
-import meloplayer.app.db.MeloDatabase
-import meloplayer.app.db.Songs
-import meloplayer.app.playbackx.glue.PlaybackGlue
+//import meloplayer.app.playbackx.glue.PlaybackGlue
 import meloplayer.app.prefs.PreferenceManager
-import meloplayer.app.store.MediaStoreFetcherUtil.getSongsMediaStoreProperties
-import meloplayer.app.store.MetadataDBPopulate
-import meloplayer.app.storex.MeloDB
-import meloplayer.app.storex.SyncManager
+import meloplayer.app.db.MeloDB
+import meloplayer.app.db.SyncManager
 import meloplayer.app.ui.RootScreen
-import meloplayer.core.startup.applicationContextGlobal
 import meloplayer.core.ui.AppTheme
 import meloplayer.core.ui.ColorSchemeType
 import org.koin.android.ext.android.inject
-import org.koin.compose.koinInject
 import java.time.Duration
-import java.time.Instant
 import java.time.LocalDateTime
 
 class MainActivity : ComponentActivity() {
@@ -54,7 +44,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
 
-        PlaybackGlue.instance.onStartImpl()
+//        PlaybackGlue.instance.onStartImpl()
 
 
         enableEdgeToEdge(
@@ -104,7 +94,6 @@ class MainActivity : ComponentActivity() {
                         val start = LocalDateTime.now()
                         Toast.makeText(this@MainActivity, "Start", Toast.LENGTH_SHORT).show()
                         GlobalScope.launch(Dispatchers.IO) {
-                            val x = db.songsDao().getSongsWithAlbumAndArtists()
                             withContext(Dispatchers.Main){
                                 val end  = LocalDateTime.now()
                                 Toast.makeText(this@MainActivity, "End after " +

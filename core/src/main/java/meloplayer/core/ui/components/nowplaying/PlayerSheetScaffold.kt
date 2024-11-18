@@ -168,8 +168,8 @@ fun isLayoutTypeVertical() = with(currentWindowAdaptiveInfo()) {
     when {
         windowPosture.isTabletop -> true
 
-        windowSizeClass.windowWidthSizeClass == androidx.window.core.layout.WindowWidthSizeClass.EXPANDED ||
-                windowSizeClass.windowWidthSizeClass == androidx.window.core.layout.WindowWidthSizeClass.MEDIUM -> false
+        windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED ||
+                windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.MEDIUM -> false
 
         else -> true
     }

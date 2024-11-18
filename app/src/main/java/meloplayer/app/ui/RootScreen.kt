@@ -2,18 +2,8 @@ package meloplayer.app.ui
 
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Folder
@@ -21,21 +11,12 @@ import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.LineStyle
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PersonalInjury
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastDistinctBy
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
 import dev.olshevski.navigation.reimagined.AnimatedNavHost
 import dev.olshevski.navigation.reimagined.NavAction
 import dev.olshevski.navigation.reimagined.NavBackHandler
@@ -47,14 +28,12 @@ import kotlinx.coroutines.launch
 import meloplayer.app.playbackx.PlaybackCommand
 import meloplayer.app.playbackx.PlaybackStateX
 import meloplayer.app.playbackx.PlaybackTimeline
-import meloplayer.app.playbackx.glue.PlaybackGlue
-import meloplayer.app.ui.comps.nowplaying.MiniPlayer
 import meloplayer.app.ui.comps.nowplaying.NowPlayingPanel
-import meloplayer.app.ui.screen.AlbumListScreen
-import meloplayer.app.ui.screen.ArtistListScreen
-import meloplayer.app.ui.screen.songs.SongListScreen
+import meloplayer.app.parts.albums.list.AlbumListScreen
+import meloplayer.app.parts.artists.list.ArtistListScreen
+import meloplayer.app.parts.songs.list.SongListScreen
 //import meloplayer.app.ui.screen.songs.SongListScreen
-import meloplayer.core.store.repo.SongsRepository
+import meloplayer.app.repo.SongsRepository
 import meloplayer.core.ui.components.nowplaying.PlayerSheetScaffold
 import meloplayer.core.ui.components.nowplaying.rememberPlayerSheetState
 import meloplayer.core.ui.materialSharedAxisZIn
@@ -65,8 +44,6 @@ enum class TabScreen {
     ForYou, Songs, Albums, Artists, Folders, Playlist
 }
 
-val playbackManager
-    get() = PlaybackGlue.instance.playbackManagerX
 
 
 @Composable
@@ -77,12 +54,7 @@ fun RootScreen(
     val sheetState = rememberPlayerSheetState()
     val coroutineScope = rememberCoroutineScope()
 
-    val state by PlaybackGlue.instance.playbackManagerX.playbackStateX.map {
-        when(it){
-            PlaybackStateX.Empty -> null
-            is PlaybackStateX.OnGoing -> it
-        }
-    }.collectAsStateWithLifecycle(initialValue = null)
+    val state: PlaybackStateX.OnGoing? = null
     val currentSong = remember(state){ state?.currentMediaItemId }
     val playbackProgressPos = remember(state){ state?.timeline as? PlaybackTimeline.Prepared }
     val queue = remember(state){ state?.queue }
@@ -95,51 +67,47 @@ fun RootScreen(
     val isPlaying = remember(state) {
         state?.isPlaying ?: false
     }
-    val currentSongDetails = remember(state) {
-        state?.currentMediaItemId?.let {  id ->
-            SongsRepository.instance.songById(id).getOrNull()
-        }
-    }
+
 
     PlayerSheetScaffold(
         sheetState = sheetState,
         fullPlayerContent = {
             NowPlayingPanel(
-                playItem = { playbackManager.handleCommand(PlaybackCommand.SetCurrentQueueItemIndex(it)) },
+                playItem = {
+//                    playbackManager.handleCommand(PlaybackCommand.SetCurrentQueueItemIndex(it))
+                           },
                 playingQueueAlbumArtUris = queue ?: listOf(),
                 currentItemIndex = currentSongIndex,
                 currentPlaybackProgress = playbackProgress,
                 setPlaybackProgress = { floatVal ->
                     playbackProgressPos?.let { posCurr ->
-                        playbackManager.handleCommand(PlaybackCommand.SetPosition(
-                            (posCurr.totalMills * floatVal).toLong()
-                        ))
+//                        playbackManager.handleCommand(PlaybackCommand.SetPosition(
+//                            (posCurr.totalMills * floatVal).toLong()
+//                        ))
                     }
                 }
             )
         },
         miniPlayerContent = { applyNavBarPadding ->
-            val currentSongThis = currentSongDetails
-            if (currentSongThis != null) {
-                MiniPlayer(
-                    isPlaying = isPlaying,
-                    currentSong = currentSongThis,
-                    playbackProgress = playbackProgress,
-                    onClick = {
-                        coroutineScope.launch { sheetState.expandToFullPlayer() }
-                    },
-                    onSkipToPrevious = {
-                        playbackManager.handleCommand(PlaybackCommand.SkipPrevious)
-                    },
-                    onSkipToNext = {
-                        playbackManager.handleCommand(PlaybackCommand.SkipNext)
-                    },
-                    onSwitchPlayPause = {
-                        playbackManager.handleCommand(PlaybackCommand.SwitchPlaying)
-                    },
-                    insetPaddings = if (applyNavBarPadding) WindowInsets.navigationBars else null
-                )
-            }
+//                MiniPlayer(
+//                    isPlaying = isPlaying,
+//                    currentSong = currentSongThis,
+//                    playbackProgress = playbackProgress,
+//                    onClick = {
+//                        coroutineScope.launch { sheetState.expandToFullPlayer() }
+//                    },
+//                    onSkipToPrevious = {
+//                        playbackManager.handleCommand(PlaybackCommand.SkipPrevious)
+//                    },
+//                    onSkipToNext = {
+//                        playbackManager.handleCommand(PlaybackCommand.SkipNext)
+//                    },
+//                    onSwitchPlayPause = {
+//                        playbackManager.handleCommand(PlaybackCommand.SwitchPlaying)
+//                    },
+//                    insetPaddings = if (applyNavBarPadding) WindowInsets.navigationBars else null
+//                )
+//            }
         },
         navigationSuiteItems = {
             TabScreen.entries.forEach { tabHere ->

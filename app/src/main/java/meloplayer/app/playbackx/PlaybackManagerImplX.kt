@@ -412,6 +412,6 @@ class PlaybackManagerImplX(
 }
 
 
-private fun songIdToUri(songId: Long) = ContentUris.withAppendedId(
+fun songIdToUri(songId: Long) = ContentUris.withAppendedId(
     MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, songId
 )

@@ -54,7 +54,6 @@ android {
     room {
         schemaDirectory("$projectDir/schemas")
     }
-
 }
 
 

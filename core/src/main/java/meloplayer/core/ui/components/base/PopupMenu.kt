@@ -2,6 +2,7 @@ package meloplayer.core.ui.components.base
 
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.LocalIndication
@@ -136,7 +137,7 @@ private fun PopupContent(
     val expandedState = remember { MutableTransitionState(false) }
     expandedState.targetState = visible
 
-    val transition = updateTransition(expandedState, "Menu fade in/out")
+    val transition = rememberTransition(expandedState, "Menu fade in/out")
 
     val size by transition.animateFloat(
         transitionSpec = {
