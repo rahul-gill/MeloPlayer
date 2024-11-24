@@ -5,7 +5,7 @@ import androidx.room.DatabaseView
 
 
 @DatabaseView(
-    "SELECT artists.*, isSongArtist, isAlbumArtist, song_id " +
+    "SELECT artists.*, isSongArtist, isAlbumArtist, songArtistIndex, albumArtistIndex, song_id " +
             "FROM artists JOIN song_artists " +
             "WHERE song_artists.artist_id = artists.artist_id"
 )
@@ -18,6 +18,8 @@ data class ArtistWithSongOrAlbumTypeDetail(
     val imageUri: String? = null,
     val isSongArtist: Boolean,
     val isAlbumArtist: Boolean,
+    val songArtistIndex: Long? = null,
+    val albumArtistIndex: Long? = null,
     @ColumnInfo("song_id")
     val songId: Long
 )

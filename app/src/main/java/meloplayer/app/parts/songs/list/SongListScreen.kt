@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -85,7 +86,7 @@ val monthFormatter by lazy {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SongListScreen(
-    viewModel: SongListViewModel = koinViewModel()
+    viewModel: SongListViewModel = koinViewModel(),
 ) {
     val onSongClick = { song: SongWithAllDetails ->
 //        if (!songs.isNullOrEmpty()) {
@@ -180,6 +181,12 @@ fun SongListScreen(
                             contentDescription = "TODO"
                         )
                     }
+                    IconButton(onClick = viewModel::onSync) {
+                        Icon(
+                            imageVector = Icons.Filled.Sync,
+                            contentDescription = "TODO"
+                        )
+                    }
                     if (showOverflowMenu) {
                         SongSortOrderSelectSheet(
                             songSortOrder = sortOrder,
@@ -236,25 +243,7 @@ private fun SongSortOrderSelectSheet(
                     .selectable(
                         selected = (choice::class == newSortOrder::class),
                         onClick = {
-                            newSortOrder = when (choice) {
-                                is SongSortOrder.Album -> choice.copy(
-                                    newSortOrder.isAscending
-                                )
-
-
-                                is SongSortOrder.DateModified -> choice.copy(
-                                    newSortOrder.isAscending
-                                )
-
-                                is SongSortOrder.Duration -> choice.copy(
-                                    newSortOrder.isAscending
-                                )
-
-                                is SongSortOrder.Name -> choice.copy(
-                                    newSortOrder.isAscending
-                                )
-
-                            }
+                            newSortOrder = choice.copyWithOrder(newSortOrder.isAscending)
                         },
                         role = Role.RadioButton
                     )
@@ -276,25 +265,7 @@ private fun SongSortOrderSelectSheet(
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             val orderChanger =
                 { choice: SongSortOrder, newIsAscending: Boolean ->
-                    when (choice) {
-                        is SongSortOrder.Album -> choice.copy(
-                            newIsAscending
-                        )
-
-
-                        is SongSortOrder.DateModified -> choice.copy(
-                            newIsAscending
-                        )
-
-                        is SongSortOrder.Duration -> choice.copy(
-                            newIsAscending
-                        )
-
-                        is SongSortOrder.Name -> choice.copy(
-                            newIsAscending
-                        )
-
-                    }
+                    choice.copyWithOrder(newIsAscending)
                 }
             SegmentedButton(
                 onClick = { newSortOrder = orderChanger(newSortOrder, true) },
@@ -462,6 +433,8 @@ private fun SongsResponsiveGrid(
         }
     }
 }
+
+
 
 
 private fun Modifier.gridSelectionDragHandler(

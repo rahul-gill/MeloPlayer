@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "d3445e79d024d19842b6784f37a91ee0",
+    "identityHash": "9ca5e180f4c16d784f1a5146af8d3ced",
     "entities": [
       {
         "tableName": "albums",
@@ -300,7 +300,7 @@
       },
       {
         "tableName": "song_artists",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`song_id` INTEGER NOT NULL, `artist_id` INTEGER NOT NULL, `isAlbumArtist` INTEGER NOT NULL, `isSongArtist` INTEGER NOT NULL, PRIMARY KEY(`song_id`, `artist_id`), FOREIGN KEY(`song_id`) REFERENCES `songs`(`song_id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`artist_id`) REFERENCES `artists`(`artist_id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`song_id` INTEGER NOT NULL, `artist_id` INTEGER NOT NULL, `isAlbumArtist` INTEGER NOT NULL, `isSongArtist` INTEGER NOT NULL, `songArtistIndex` INTEGER, `albumArtistIndex` INTEGER, PRIMARY KEY(`song_id`, `artist_id`), FOREIGN KEY(`song_id`) REFERENCES `songs`(`song_id`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`artist_id`) REFERENCES `artists`(`artist_id`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
         "fields": [
           {
             "fieldPath": "songId",
@@ -325,6 +325,18 @@
             "columnName": "isSongArtist",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "songArtistIndex",
+            "columnName": "songArtistIndex",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "albumArtistIndex",
+            "columnName": "albumArtistIndex",
+            "affinity": "INTEGER",
+            "notNull": false
           }
         ],
         "primaryKey": {
@@ -521,12 +533,12 @@
     "views": [
       {
         "viewName": "ArtistWithSongOrAlbumTypeDetail",
-        "createSql": "CREATE VIEW `${VIEW_NAME}` AS SELECT artists.*, isSongArtist, isAlbumArtist, song_id FROM artists JOIN song_artists WHERE song_artists.artist_id = artists.artist_id"
+        "createSql": "CREATE VIEW `${VIEW_NAME}` AS SELECT artists.*, isSongArtist, isAlbumArtist, songArtistIndex, albumArtistIndex, song_id FROM artists JOIN song_artists WHERE song_artists.artist_id = artists.artist_id"
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd3445e79d024d19842b6784f37a91ee0')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9ca5e180f4c16d784f1a5146af8d3ced')"
     ]
   }
 }

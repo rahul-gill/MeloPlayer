@@ -25,5 +25,7 @@ data class SongArtist(
     @ColumnInfo(name = "artist_id", index = true)
     val artistId: Long,
     val isAlbumArtist: Boolean,
-    val isSongArtist: Boolean
+    val isSongArtist: Boolean,
+    val songArtistIndex: Long? = null,
+    val albumArtistIndex: Long? = null,
 )

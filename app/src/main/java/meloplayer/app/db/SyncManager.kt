@@ -37,7 +37,7 @@ class SyncManager(
     data class MediaStoreProperties(
         val id: Long,
         val path: String,
-        val dateModified: Instant
+        val dateModified: Long
     )
 
     class ContentResolverQueryNullException : RuntimeException()
@@ -77,7 +77,7 @@ class SyncManager(
                     MediaStoreProperties(
                         id = id,
                         path = data,
-                        dateModified = Instant.ofEpochMilli(dateModified)
+                        dateModified = dateModified
                     )
                 }
                 .toList()
@@ -163,6 +163,14 @@ class SyncManager(
                     ?.toIntOrNull()
             val subtitle = getAttrsOfPropMap(metadata, "SUBTITLE", listOf()).firstOrNull()?.trim()
 
+            //TODO: other useful tags
+            listOf(
+                "DATE",
+                "COMPOSER",
+                "LYRICIST",
+                "COPYRIGHT",
+            )
+            println("")
 
             return@use Result.success(
                 Pair(
@@ -293,7 +301,7 @@ class SyncManager(
                                 songId = songId,
                                 artistId = artistId,
                                 isSongArtist = isSongArtist,
-                                isAlbumArtist =  isAlbumArtist
+                                isAlbumArtist = isAlbumArtist
                             )
                         )
                     }
@@ -316,7 +324,7 @@ class SyncManager(
                         cdNumber = tagDetails.diskNumber,
                         albumId = albumId,
                         subtitle = tagDetails.subtitle,
-                        dateModified = mediaStoreProperties.dateModified.toEpochMilli()
+                        dateModified = mediaStoreProperties.dateModified
                     )
                 )
             }

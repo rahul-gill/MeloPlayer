@@ -77,32 +77,6 @@ class MainActivity : ComponentActivity() {
                 ) {
                     RootScreen()
                 }
-                Button(
-
-                    modifier = Modifier.padding(top = 50.dp),
-                    onClick = {
-                    GlobalScope.launch {
-                        syncM.syncDatabaseWithFileSystem()
-                    }
-                }) {
-                    Text("Start the sync process")
-                }
-                Button(
-
-                    modifier = Modifier.padding(top = 100.dp),
-                    onClick = {
-                        val start = LocalDateTime.now()
-                        Toast.makeText(this@MainActivity, "Start", Toast.LENGTH_SHORT).show()
-                        GlobalScope.launch(Dispatchers.IO) {
-                            withContext(Dispatchers.Main){
-                                val end  = LocalDateTime.now()
-                                Toast.makeText(this@MainActivity, "End after " +
-                                        "${Duration.between(start, end).toMillis()}ms", Toast.LENGTH_LONG).show()
-                            }
-                        }
-                    }) {
-                    Text("Start query")
-                }
             }
         }
     }

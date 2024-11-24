@@ -29,11 +29,11 @@ class SongRepoImpl(
         val finalFilters = songFilter + defaultFilters
         println("SongRepoImpl: getSongsStart")
         val res = dao.getSongWithAllDetails()
-                .map { list ->
-                    list.filter { item ->
-                        finalFilters.all { item.isMatchingFilter(it) }
-                    }
+            .map { list ->
+                list.filter { item ->
+                    finalFilters.all { item.isMatchingFilter(it) }
                 }
+            }
         println("SongRepoImpl: getSongsEnd")
         return res
     }
@@ -41,12 +41,33 @@ class SongRepoImpl(
 }
 
 //Comparator like func
-fun compareSongs(song1: SongWithAllDetails, song2: SongWithAllDetails, sortOrder: SongSortOrder): Int {
+fun compareSongs(
+    song1: SongWithAllDetails,
+    song2: SongWithAllDetails,
+    sortOrder: SongSortOrder
+): Int {
     val res: Int = when (sortOrder) {
         is SongSortOrder.Album -> (song1.album?.title ?: "").compareTo(song2.album?.title ?: "")
         is SongSortOrder.DateModified -> song1.song.dateModified.compareTo(song2.song.dateModified)
         is SongSortOrder.Duration -> song1.song.lengthMs.compareTo(song2.song.lengthMs)
         is SongSortOrder.Name -> song1.song.title.compareTo(song2.song.title)
+        is SongSortOrder.AlbumArtist -> {
+            var song1x = ""
+            var song2x = ""
+            song1.artists.forEach { if (it.isAlbumArtist) song1x += it.name + ";" }
+            song2.artists.forEach { if (it.isAlbumArtist) song2x += it.name + ";" }
+            song1x.compareTo(song2x)
+        }
+
+        is SongSortOrder.SongArtist -> {
+            var song1x = ""
+            var song2x = ""
+            song1.artists.forEach { if (it.isSongArtist) song1x += it.name + ";" }
+            song2.artists.forEach { if (it.isSongArtist) song2x += it.name + ";" }
+            song1x.compareTo(song2x)
+        }
+
+        is SongSortOrder.Year -> 0//TODO
     }
     return if (sortOrder.isAscending) res
     else when {
@@ -74,11 +95,11 @@ fun SongWithAllDetails.isMatchingFilter(songFilter: SongFilter): Boolean {
         }
 
         is SongFilter.AlbumArtistIdExact -> {
-            artists.any { artist ->  songFilter.albumArtistId == artist.artistId && artist.isAlbumArtist }
+            artists.any { artist -> songFilter.albumArtistId == artist.artistId && artist.isAlbumArtist }
         }
 
         is SongFilter.AlbumIdExact -> {
-            if(album == null){
+            if (album == null) {
                 return false
             } else {
                 album.id == songFilter.albumId
@@ -92,6 +113,7 @@ fun SongWithAllDetails.isMatchingFilter(songFilter: SongFilter): Boolean {
                     songFilter.album,
                     album.title
                 ) < LevenshteinDistanceThreshold
+
                 else -> album.title.contains(songFilter.album)
             }
         }
@@ -111,7 +133,7 @@ fun SongWithAllDetails.isMatchingFilter(songFilter: SongFilter): Boolean {
         }
 
         is SongFilter.ArtistsIdExact -> {
-            artists.any { it.artistId == songFilter.artistId  && it.isSongArtist}
+            artists.any { it.artistId == songFilter.artistId && it.isSongArtist }
         }
 
         is SongFilter.DirectoryPathExact -> {

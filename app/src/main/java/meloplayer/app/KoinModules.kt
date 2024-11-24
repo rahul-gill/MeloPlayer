@@ -29,7 +29,7 @@ import java.time.Instant
 
 val appModule = module {
     //viewmodels
-    viewModel<SongListViewModel> { SongListViewModel(get()) }
+    viewModel<SongListViewModel> { SongListViewModel(get(),get()) }
     viewModel<AlbumListViewModel> { AlbumListViewModel(get()) }
     viewModel<GenresListViewModel> { GenresListViewModel(get()) }
     viewModel<ArtistListViewModel> { ArtistListViewModel(get()) }
